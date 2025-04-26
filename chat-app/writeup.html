@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Styling</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f8fb;
+            padding: 40px;
+            max-width: 800px;
+            margin: auto;
+            line-height: 1.6;
+        }
+
+        h1 {
+            font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+            font-size: 36px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>✅ Chat App Usability & Styling Assessment</h1>
+
+  <div class="section">
+    <h2><span class="emoji">🎨</span>Visual Consistency & Styling</h2>
+    <p>We implemented a modern, responsive design using <strong>two main columns</strong> within the group settings view — a pattern inspired by apps like WhatsApp or Telegram, which improves user familiarity.</p>
+    <p>The <strong>chat-area layout mimics mobile apps</strong>: when users click the group name and image, the main message view is replaced with a <strong>full-screen group info panel</strong>, which includes options for renaming the group, changing the description, and viewing or adding members. This helps make the interface feel dynamic and mobile-friendly.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="emoji">⏳</span>Loading & Feedback for Async Operations</h2>
+    <ul>
+      <li>While the current implementation uses local state (e.g., <code>groupNameDraft</code>), it was structured to easily support async operations like saving group changes to a server.</li>
+      <li>Feedback mechanisms such as <strong>loading spinners or toast notifications</strong> can be added seamlessly during save operations.</li>
+      <li>Enhancement idea: show a spinner or success toast when renaming or saving group settings.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="emoji">🧭</span>Consistency with Real Chat Apps</h2>
+    <ul>
+      <li>The interface is familiar and intuitive, closely mimicking WhatsApp’s interaction flow.</li>
+      <li>We avoided dropdowns in favor of <strong>mobile-style full-screen transitions</strong> when accessing group info.</li>
+      <li>Sidebar groups remain visible, improving context and accessibility.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="emoji">♻️</span>Recovering from Mistakes</h2>
+    <ul>
+      <li>Rename input is separate from the commit action — users are safe to edit before confirming.</li>
+      <li>The UI is structured to support future undoable actions like leaving or deleting a group.</li>
+      <li>Modal confirmations or toasts can be introduced for critical actions.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="emoji">🧠</span>Naming and Clarity</h2>
+    <ul>
+      <li>User-facing names are chosen to be <strong>clear and intuitive</strong>, avoiding technical jargon.</li>
+      <li>Examples: “Rename Group”, “Group Description”, and “Add Members”.</li>
+      <li>These terms align with established chat app terminology.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>✅ Summary</h2>
+    <p>The app is evolving beyond functionality — it’s becoming a polished, familiar, and responsive user experience. We've followed real-world chat app norms while creating a clean UI foundation for future growth like modals, toasts, and real-time updates.</p>
+    <p><em>Let us know if you’d like to add screenshots or a demo video next!</em></p>
+  </div>
+</body>
+</html>

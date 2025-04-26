@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DesignFTW Chatroom</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.esm-browser.js",
+          "@graffiti-garden/implementation-local": "https://cdn.jsdelivr.net/npm/@graffiti-garden/implementation-local@0.6.4/dist/browser/index.js",
+          "@graffiti-garden/wrapper-vue": "https://cdn.jsdelivr.net/npm/@graffiti-garden/wrapper-vue@0.7.2/dist/browser/plugin.mjs"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app" v-if="isLoggedIn">
+        <div class="sidebar">
+            <div class="header">
+                <h1>PlanChat</h1>
+
+                <button class="logic" v-if="!$graffitiSession.value" @click="$graffiti.login()">Log In</button>
+
+                <template v-else>
+                    <button class="logic" @click="$graffiti.logout($graffitiSession.value)">Log Out</button>
+                </template>
+            </div>
+            
+            <div class="header">
+                <h2>Group Chats</h2>
+
+
+                <div class="create-group-wrapper">
+                    <button id="toggleGroupMenu" class="plus-button">+</button>
+                    <div id="groupMenu" class="dropdown hidden">
+                    <button id="showCreateForm">Create Group</button>
+                    <button id="invitationsBtn" disabled>Invitations</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Create Group Form -->
+            <form @submit.prevent="createGroup($graffitiSession.value)" class="hidden" id="createGroupForm">
+            <input class="newGroupChat" type="text" v-model="groupName" placeholder="Group Chat Name" required />
+            <button class="logic" type="submit">Create Group</button>
+            </form>
+
+            <!-- Group Chat List -->
+            <graffiti-discover
+            v-slot="{ objects: groupChatObjects }"
+            :channels="['designftw']"
+            :schema="{
+                properties: {
+                value: {
+                    required: ['activity', 'object'],
+                    properties: {
+                    activity: { const: 'Create' },
+                    object: {
+                        required: ['type', 'name', 'channel'],
+                        properties: {
+                        type: { const: 'Group Chat' },
+                        name: { type: 'string' },
+                        channel: { type: 'string' }
+                        }
+                    }
+                    }
+                }
+                }
+            }"
+            >
+            <ul class="group-chat-list">
+                <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel">
+                    <button class="groupchatbutton">
+                        <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                        <div class="text-content">
+                        <strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
+                        </div>
+                    </button>
+                </li>
+            </ul>
+            </graffiti-discover>
+        </div>
+        <div class="chat-area">
+            
+
+            <!-- Group Chat View -->
+            <template v-if="selectedChannel">
+                <div>
+                    <div class="titleGroup" @click="showGroupInfo = true">
+                        <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                        <h2>{{ getGroupName(selectedChannel) }}</h2>
+                        <span class="info-icon">ℹ️</span>
+                    </div>
+                </div>
+
+                <div class="group-info-panel" v-if="showGroupInfo">
+                    <button @click="showGroupInfo = false" class="plus-button">く</button>
+                    <div class="group-info-content">
+                      <!-- Left Column: Group Settings -->
+                      <div class="group-settings">
+                        <h2>Group Settings</h2>
+                        <div>
+                          <label>Rename Group:</label>
+                          <div class="renaming">
+                            <input v-model="groupName" type="text" />
+                            <button @click="renameGroup" class="rename-btn">Rename Group</button>
+                          </div>
+                        </div>
+                        <div>
+                          <label>Description:</label>
+                          <textarea v-model="groupDescription"></textarea>
+                        </div>
+                        <!-- more settings can go here -->
+                      </div>
+                  
+                      <!-- Right Column: Members -->
+                      <div class="group-members">
+                        <h2>Members</h2>
+                        <div class="membersContainer">
+                            <ul>
+                            <li v-for="member in groupMembers" :key="member">{{ member }}</li>
+                            </ul>
+                            <button class="add-member-btn">+ Add Member</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                <div v-if="!showGroupInfo" class="chat-messages-panel">
+                    <graffiti-discover
+                        v-slot="{ objects: messageObjects, isInitialPolling }"
+                        :channels="[selectedChannel]"
+                        :schema="{
+                        properties: {
+                            value: {
+                            required: ['content', 'published'],
+                            properties: {
+                                content: { type: 'string' },
+                                published: { type: 'number' }
+                            }
+                            }
+                        }
+                        }"
+                    >
+                        <ul>
+                        <li v-for="object in messageObjects" :key="object.url" class="chat-message">
+                            <div class="miMensaje" v-if="object.actor === $graffitiSession.value.actor">
+                                <div class="message-header" >
+                                    <span class="authorMe" >{{ object.actor }} (you)</span>
+
+                                    
+                                </div>
+                                
+                                <div v-if="editingMessage === object">
+                                    <input v-model="editContent" class="editText"/>
+                                    <button @click="saveEdit(object)">Save</button>
+                                    <button @click="cancelEdit">Cancel</button>
+                                </div>
+                                
+                                <div v-else class="message-bubble">
+                                    {{ object.value.content }}
+
+                                    <!-- Dropdown menu (⋮) -->
+                                    <div
+                                    v-if="object.actor === $graffitiSession.value.actor"
+                                    class="message-menu"
+                                    >
+                                    <button class="menu-toggle" @click="toggleMessageMenu(object)">⋮</button>
+                                    <div v-if="activeMenu === object" class="dropdown">
+                                        <button @click="startEdit(object)" class="option">Edit</button>
+                                        <button @click="deleteMessage(object)" class="option">Delete</button>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="otroMensaje" v-else>
+                                <div class="message-header">
+                                    <span class="author">{{ object.actor }}</span>
+                                </div>
+
+                                
+                                <div class="message-bubble">
+                                    {{ object.value.content }}
+                                </div>
+                            </div>
+                        </li>
+                        </ul>
+                    </graffiti-discover>
+
+                    <form @submit.prevent="sendMessage($graffitiSession.value)">
+                        <fieldset :disabled="sending">
+                        <input type="text" v-model="myMessage" placeholder="Message" ref="messageInput" />
+                        <input type="submit" :value="sending ? 'Sending...' : '➤'" />
+                        </fieldset>
+                    </form>
+                </div>
+                <!--button @click="selectedChannel = null">Back to Group List</button-->
+            </template>
+
+                <!-- Group Name Data Fetcher (hidden) -->
+                <graffiti-discover
+                    ref="groupNameDiscover"
+                    v-slot="{ objects }"
+                    :channels="['designftw']"
+                    :schema="{
+                        properties: {
+                        value: {
+                            required: ['name', 'describes'],
+                            properties: {
+                            name: { type: 'string' },
+                            describes: { type: 'string' }
+                            }
+                        }
+                        }
+                    }"
+                    >
+                    <div style="display: none">{{ updateGroupNameObjects(objects) }}</div>
+                </graffiti-discover>
+            </template>
+        </div>
+    </div>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
