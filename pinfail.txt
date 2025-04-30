@@ -1,0 +1,92 @@
+<div v-if="pinnedMessage" class="pinned-message">
+                            <h3>Pinned Message</h3>
+                            <ul>
+                                <li v-for="object in messageObjects" :key="object.url">
+                                    <div class="pinned-message-content" v-if="object.value.pinned">
+                                        {{ pinnedMessage }}
+                                        <button @click="unpinMessage" class="unpin-button">Unpin</button>
+                                    </div>
+                                </li>
+                            </ul>
+                            
+                        </div>
+
+
+<Pin
+                                            :pinnedMessage="pinnedMessage"
+                                            :message="object.value.content"  
+                                            @pin-message="handlePinMessage"
+                                            @unpin-message="handleUnpinMessage"
+                                        />
+
+pinMessage(message) {
+      // Only broadcast if it's a new pinned message
+      if (!this.pinnedMessage || this.pinnedMessage.id !== message.id) {
+        this.pinnedMessage = message;
+        this.broadcastPinnedMessage(message);
+      }
+    },
+    
+    async broadcastPinnedMessage(message) {
+      // Only send the relevant information, not the whole object
+      await this.$graffiti.put(
+        {
+          value: {
+            content: message.value.content,
+            pinned: true,
+            published: Date.now(),
+          },
+          channels: [this.selectedChannel],
+        },
+        this.$graffitiSession.value
+      );
+    },
+    
+    unpinMessage() {
+      console.log("Unpin button clicked");
+      if (this.pinnedMessage) {
+        this.broadcastUnpinnedMessage(this.pinnedMessage);
+        this.pinnedMessage = null;
+      }
+    },
+    
+    async broadcastUnpinnedMessage(message) {
+      // Notify unpin for a specific message
+      await this.$graffiti.put(
+        {
+          value: {
+            content: message.value.content,
+            pinned: false,
+            published: Date.now(),
+          },
+          channels: [this.selectedChannel],
+        },
+        this.$graffitiSession.value
+      );
+    },    
+
+    async handlePinMessage(message) {
+      this.pinMessage(message);
+    },
+    async handleUnpinMessage() {
+      this.unpinMessage()
+    },
+
+
+components: {
+    Pin: {
+      props: ['pinnedMessage', 'message'],
+      emits: ['pin-message', 'unpin-message'],
+      template: `
+        <div class="pin-options">
+          <button v-if="pinnedMessage !== message" @click="$emit('pin-message', message)" class="option">
+            Pin
+          </button>
+          <button v-else @click="$emit('unpin-message')" class="option">
+            Unpin
+          </button>
+        </div>
+      `,
+    }
+  },
+

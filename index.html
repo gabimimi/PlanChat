@@ -16,12 +16,62 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="app" v-if="isLoggedIn">
+    <div id="app" v-if="$graffitiSession.value">
+
         <div class="sidebar">
+            <div
+                class="profile-toggle"
+                v-if="currentActor"
+                @click="showProfile = !showProfile"
+                >
+                <img
+                    v-if="profileForm.picture"
+                    :src="profileForm.picture"
+                    alt="Mi perfil"
+                    class="avatar-icon"
+                />
+                <img v-else class="avatar-icon" src="./individualavatar.png"/>
+            </div>
+
+            <!-- Panel de edición de perfil -->
+            <template v-if="showProfile && currentActor">
+                <div class="profile-backdrop" @click="showProfile = false">
+                  <div class="profile-modal" @click.stop>
+                    <h3>Mi Perfil</h3>
+              
+                    <label>Nombre</label>
+                    <input v-model="profileForm.name" placeholder="Tu nombre" />
+              
+                    <label>Pronombres</label>
+                    <input v-model="profileForm.pronouns" placeholder="ella/ella" />
+              
+                    <label>Bio</label>
+                    <textarea v-model="profileForm.bio" placeholder="Una breve bio"></textarea>
+              
+                    <!-- Nueva sección: foto -->
+                    <label>Foto de perfil</label>
+                    <input type="file" accept="image/*" @change="onFileChange" />
+                    <div v-if="profileForm.picture" class="img-preview">
+                      <AvatarIcon :src="profileForm.picture" alt="Preview de perfil" />
+                    </div>
+              
+                    <button class="logic" @click="saveProfile">Guardar perfil</button>
+                    <button
+                      class="logic cancel"
+                      @click="showProfile = false"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </template>
+          
+  
+
             <div class="header">
                 <h1>PlanChat</h1>
 
-                <button class="logic" v-if="!$graffitiSession.value" @click="$graffiti.login()">Log In</button>
+                <button class="logic" v-if="!$graffitiSession.value" @click="login">Log In</button>
 
                 <template v-else>
                     <button class="logic" @click="$graffiti.logout($graffitiSession.value)">Log Out</button>
@@ -42,10 +92,12 @@
             </div>
             
             <!-- Create Group Form -->
-            <form @submit.prevent="createGroup($graffitiSession.value)" class="hidden" id="createGroupForm">
-            <input class="newGroupChat" type="text" v-model="groupName" placeholder="Group Chat Name" required />
-            <button class="logic" type="submit">Create Group</button>
-            </form>
+            <div class=" header">
+                <form @submit.prevent="createGroup($graffitiSession.value)" class="hidden" id="createGroupForm">
+                <input class="newGroupChat" type="text" v-model="groupName" placeholder="Group Chat Name" id="createGroupId" required />
+                <button class="logic" type="submit">Create Group</button>
+                </form>
+            </div>
 
             <!-- Group Chat List -->
             <graffiti-discover
@@ -70,16 +122,18 @@
                 }
             }"
             >
-            <ul class="group-chat-list">
-                <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel">
-                    <button class="groupchatbutton">
-                        <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                        <div class="text-content">
-                        <strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
-                        </div>
-                    </button>
-                </li>
-            </ul>
+            <div class="chats">
+                <ul class="group-chat-list">
+                    <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel, showGroupInfo = false">
+                        <button class="groupchatbutton">
+                            <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                            <div class="text-content">
+                            <strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
+                            </div>
+                        </button>
+                    </li>
+                </ul>
+            </div>
             </graffiti-discover>
         </div>
         <div class="chat-area">
@@ -87,16 +141,19 @@
 
             <!-- Group Chat View -->
             <template v-if="selectedChannel">
-                <div>
-                    <div class="titleGroup" @click="showGroupInfo = true">
-                        <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                        <h2>{{ getGroupName(selectedChannel) }}</h2>
-                        <span class="info-icon">ℹ️</span>
-                    </div>
-                </div>
-
                 <div class="group-info-panel" v-if="showGroupInfo">
-                    <button @click="showGroupInfo = false" class="plus-button">く</button>
+
+                    <div>
+                        
+                        <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
+                            <button class="plus-button">く</button>
+                            <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                            <h2>{{ getGroupName(selectedChannel) }}</h2>
+                            <span class="info-icon">ℹ️</span>
+                        </div>
+                    </div>
+
+                    
                     <div class="group-info-content">
                       <!-- Left Column: Group Settings -->
                       <div class="group-settings">
@@ -104,7 +161,7 @@
                         <div>
                           <label>Rename Group:</label>
                           <div class="renaming">
-                            <input v-model="groupName" type="text" />
+                            <input v-model="newGroupName" type="text" placeholder="Rename group..."/>
                             <button @click="renameGroup" class="rename-btn">Rename Group</button>
                           </div>
                         </div>
@@ -119,16 +176,111 @@
                       <div class="group-members">
                         <h2>Members</h2>
                         <div class="membersContainer">
-                            <ul>
-                            <li v-for="member in groupMembers" :key="member">{{ member }}</li>
-                            </ul>
-                            <button class="add-member-btn">+ Add Member</button>
+                        <ul>
+                            <li
+                            v-for="member in groupMembers"
+                            :key="member"
+                            class="member-item"
+                            >
+                            <!-- 1) Descarga solo el perfil más reciente de este canal -->
+                            <graffiti-discover
+                                :channels="[member]"
+                                :schema="{
+                                properties: {
+                                    value: {
+                                    required: ['describes','published'],
+                                    properties: {
+                                        describes: { const: member },
+                                        published: { type: 'number' },
+                                        picture:   { type: 'string' }
+                                    }
+                                    }
+                                }
+                                }"
+                                v-slot="{ objects }"
+                            >
+                                <img
+                                class="avatar-icon"
+                                :src="memberAvatar(objects)"
+                                :alt="`Avatar de ${member}`"
+                                />
+                            </graffiti-discover>
+
+                            <!-- 3) Luego el nombre -->
+                            <span class="member-name">{{ member }}</span>
+                            </li>
+                        </ul>
+
+                        <button class="add-member-btn" @click="openInvite">
+                            + Add Member
+                        </button>
                         </div>
+
                       </div>
                     </div>
+
+                    <template v-if="showInviteModal">
+                        <div class="profile-backdrop" @click="closeInvite">
+                          <div class="profile-modal" @click.stop>
+                            <h3>Invitar a miembro</h3>
+                
+                            <label>Username or URI</label>
+                            <input
+                              list="usersList"
+                              v-model="inviteActor"
+                              placeholder="Pega URI o elige usuario"
+                            />
+                            <datalist id="usersList">
+                              <option
+                                v-for="u in allUsers"
+                                :key="u"
+                                :value="u"
+                              >{{ u }}</option>
+                            </datalist>
+                
+                            <button class="logic" @click="sendInvite">Enviar invitación</button>
+                            <button class="cancel" @click="closeInvite">
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      </template>
+
                   </div>
 
                 <div v-if="!showGroupInfo" class="chat-messages-panel">
+                    <div>
+                        <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
+                            <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                            <h2>{{ getGroupName(selectedChannel) }}</h2>
+                            <span class="info-icon">ℹ️</span>
+                        </div>
+                    </div>
+
+                    
+                    <graffiti-discover
+                        ref="membersDiscover"
+                        :key="selectedChannel"
+                        :channels="[selectedChannel]"
+                        :schema="{
+                            properties: {
+                            value: {
+                                required: ['activity','members','published'],
+                                properties: {
+                                activity: { const: 'Members' },
+                                members:  { type: 'array', items: { type: 'string' } },
+                                published:{ type: 'number' }
+                                }
+                            }
+                            }
+                        }"
+                        v-slot="{ objects }"
+                        >
+                        <!-- Asignamos objects a la propiedad reactiva membersObjects -->
+                        <div style="display:none">{{ membersObjects = objects }}</div>
+                    </graffiti-discover>
+
+
                     <graffiti-discover
                         v-slot="{ objects: messageObjects, isInitialPolling }"
                         :channels="[selectedChannel]"
@@ -144,7 +296,8 @@
                         }
                         }"
                     >
-                        <ul>
+                        
+                        <ul class="messages" ref="messagesContainer">
                         <li v-for="object in messageObjects" :key="object.url" class="chat-message">
                             <div class="miMensaje" v-if="object.actor === $graffitiSession.value.actor">
                                 <div class="message-header" >
@@ -160,18 +313,22 @@
                                 </div>
                                 
                                 <div v-else class="message-bubble">
+                                
                                     {{ object.value.content }}
-
+                                    
                                     <!-- Dropdown menu (⋮) -->
                                     <div
                                     v-if="object.actor === $graffitiSession.value.actor"
                                     class="message-menu"
                                     >
+                                    
                                     <button class="menu-toggle" @click="toggleMessageMenu(object)">⋮</button>
                                     <div v-if="activeMenu === object" class="dropdown">
-                                        <button @click="startEdit(object)" class="option">Edit</button>
-                                        <button @click="deleteMessage(object)" class="option">Delete</button>
+                                        <button @click="startEdit(object), toggleMessageMenu(object)" class="option">Edit</button>
+                                        <button @click="deleteMessage(object), toggleMessageMenu(object)" class="option">Delete</button>
+
                                     </div>
+                                    
                                     </div>
                                 </div>
                             </div>
@@ -183,8 +340,10 @@
                                 
                                 <div class="message-bubble">
                                     {{ object.value.content }}
+                                
                                 </div>
                             </div>
+                            
                         </li>
                         </ul>
                     </graffiti-discover>
@@ -219,8 +378,37 @@
                     <div style="display: none">{{ updateGroupNameObjects(objects) }}</div>
                 </graffiti-discover>
             </template>
+        
         </div>
+
+        <graffiti-discover
+            ref="profileDiscover"
+            :channels="[currentActor]"
+            :schema="{
+            properties: {
+                value: {
+                required: ['name','pronouns','bio','describes','published'],
+                properties: {
+                    name:      { type: 'string' },
+                    pronouns:  { type: 'string' },
+                    bio:       { type: 'string' },
+                    describes: { type: 'string' },
+                    published: { type: 'number' }
+                }
+                }
+            }
+            }"
+            v-slot="{ objects }"
+        >
+            <!-- Asignamos a la data reactiva -->
+            <div style="display:none">{{ profileObjects = objects }}</div>
+        </graffiti-discover>
+
+        
+
     </div>
+
+    
 
     <script type="module" src="index.js"></script>
 </body>
