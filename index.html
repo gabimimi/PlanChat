@@ -52,7 +52,7 @@
                     <label>Foto de perfil</label>
                     <input type="file" accept="image/*" @change="onFileChange" />
                     <div v-if="profileForm.picture" class="img-preview">
-                      <AvatarIcon :src="profileForm.picture" alt="Preview de perfil" />
+                      <img :src="profileForm.picture" alt="Preview de perfil" />
                     </div>
               
                     <button class="logic" @click="saveProfile">Guardar perfil</button>
