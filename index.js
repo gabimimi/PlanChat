@@ -239,6 +239,7 @@ const app = createApp({
         picture:   this.profileForm.picture,      // ← añadimos aquí
         describes: this.currentActor,
         published: Date.now(),
+        generator: "https://username.github.io/your-app/",
       };
       await this.$graffiti.put(
         { value: profileObj, channels: [ this.currentActor, "designftw-2025-studio2" ] },
