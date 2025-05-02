@@ -709,6 +709,11 @@
   margin-right: 8px;
 }
 
+.preview{
+  height: 156px;
+  width: 156px;
+}
+
 /* Efecto hover */
 .profile-toggle:hover .avatar-icon,
 .profile-toggle:hover .avatar-placeholder {

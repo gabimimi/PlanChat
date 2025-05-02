@@ -3,9 +3,25 @@ import { GraffitiLocal } from "@graffiti-garden/implementation-local";
 import { GraffitiPlugin, useGraffitiDiscover } from "@graffiti-garden/wrapper-vue";
 
 
+const AvatarIcon = {
+  name: "AvatarIcon",
+  props: {
+    src:  { type: String, default: "" },
+    alt:  { type: String, default: "Avatar" },
+    size: { type: [Number, String], default: 32 }
+  },
+  template: `
+    <img
+      :src="src || './individualavatar.png'"
+      :alt="alt"
+      :width="size"
+      :height="size"
+      class="avatar-icon"
+    />
+  `
+};
 
-
-createApp({
+const app = createApp({
 
   data() {
     return {
@@ -224,7 +240,7 @@ createApp({
         published: Date.now(),
       };
       await this.$graffiti.put(
-        { value: profileObj, channels: [ this.currentActor ] },
+        { value: profileObj, channels: [ this.currentActor, "designftw-2025-studio2" ] },
         this.$graffitiSession.value
       );
       alert("¡Perfil guardado!");
@@ -492,11 +508,17 @@ createApp({
     );
   },
 
-})
+});
+
+app.component("avatar-icon", AvatarIcon);
+
+app
   .use(GraffitiPlugin, {
-    graffiti: new GraffitiLocal(),
+    graffiti: new GraffitiRemote(),
   })
   .mount("#app");
+
+
 
 const toggleMenuBtn = document.getElementById('toggleGroupMenu');
 const groupMenu = document.getElementById('groupMenu');

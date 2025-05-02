@@ -24,13 +24,18 @@
                 v-if="currentActor"
                 @click="showProfile = !showProfile"
                 >
-                <img
+                <avatar-icon
                     v-if="profileForm.picture"
                     :src="profileForm.picture"
                     alt="Mi perfil"
-                    class="avatar-icon"
-                />
-                <img v-else class="avatar-icon" src="./individualavatar.png"/>
+                    :size="40"
+                ></avatar-icon>
+
+                <!-- otherwise fallback -->
+                <avatar-icon
+                    v-else
+                    :size="40"
+                ></avatar-icon>
             </div>
 
             <!-- Panel de edición de perfil -->
@@ -52,7 +57,7 @@
                     <label>Foto de perfil</label>
                     <input type="file" accept="image/*" @change="onFileChange" />
                     <div v-if="profileForm.picture" class="img-preview">
-                      <img :src="profileForm.picture" alt="Preview de perfil" />
+                      <img :src="profileForm.picture" alt="Preview de perfil" class="preview"/>
                     </div>
               
                     <button class="logic" @click="saveProfile">Guardar perfil</button>
@@ -199,11 +204,11 @@
                                 }"
                                 v-slot="{ objects }"
                             >
-                                <img
-                                class="avatar-icon"
+                            <avatar-icon
                                 :src="memberAvatar(objects)"
                                 :alt="`Avatar de ${member}`"
-                                />
+                                :size="32"
+                              />
                             </graffiti-discover>
 
                             <!-- 3) Luego el nombre -->
