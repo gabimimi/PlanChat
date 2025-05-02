@@ -119,7 +119,7 @@ const app = createApp({
                 channel: newChannel,
               },
             },
-            channels: ["designftw"],
+            channels: ['channelsPlanChat'],
           },
           session
         );
@@ -131,7 +131,7 @@ const app = createApp({
               name: this.groupName,
               describes: newChannel,
             },
-            channels: ["designftw"],
+            channels: ['channelsPlanChat'],
           },
           session
         );
