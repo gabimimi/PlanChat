@@ -29,6 +29,7 @@ const app = createApp({
       sending: false,
       groupName: "",
       selectedChannel: null,
+      selectedGroup: null,
       editingMessage: null,
       editContent: "",
       newGroupName: "",

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DesignFTW Chatroom</title>
+    <title>PlanChat Chatroom</title>
     <script type="importmap">
       {
         "imports": {
@@ -108,7 +108,7 @@
             <!-- Group Chat List -->
             <graffiti-discover
             v-slot="{ objects: groupChatObjects }"
-            :channels="['designftw']"
+            :channels="['channelsPlanChat']"
             :schema="{
                 properties: {
                 value: {
@@ -130,10 +130,11 @@
             >
             <div class="chats">
                 <ul class="group-chat-list">
-                    <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel, showGroupInfo = false">
+                    <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel, showGroupInfo = false, selectedGroup= group">
                         <button class="groupchatbutton">
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
                             <div class="text-content">
+                            {{selectedChannel}}
                             <strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
                             </div>
                         </button>
@@ -154,7 +155,7 @@
                         <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
                             <button class="plus-button">く</button>
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                            <h2>{{ getGroupName(selectedChannel) }}</h2>
+                            <h2>{{ getGroupName(selectedChannel) || selectedGroup.value.object.name }}</h2>
                             <span class="info-icon">ℹ️</span>
                         </div>
                     </div>
@@ -258,7 +259,7 @@
                     <div>
                         <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                            <h2>{{ getGroupName(selectedChannel) }}</h2>
+                            <h2>{{ getGroupName(selectedChannel) || selectedGroup.value.object.name }}</h2>
                             <span class="info-icon">ℹ️</span>
                         </div>
                     </div>
