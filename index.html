@@ -288,7 +288,7 @@
 
 
                     <graffiti-discover
-                        autopoll :channels="[]"
+                        autopoll :channels="[selectedChannel]"
                         v-slot="{ objects: messageObjects, isInitialPolling }"
                         :channels="[selectedChannel]"
                         :schema="{
