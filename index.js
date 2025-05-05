@@ -194,7 +194,7 @@ const app = createApp({
             name: this.newGroupName,
             describes: this.selectedChannel,
           },
-          channels: ["designftw"],
+          channels: ["channelsPlanChat"],
         },
         this.$graffitiSession.value
       );
@@ -203,7 +203,7 @@ const app = createApp({
     
 
       const latestGroupObjects = await this.$graffiti.query({
-        channels: ["designftw"],
+        channels: ["channelsPlanChat"],
         filters: [{ field: "value.describes", equals: this.selectedChannel }],
       });
     
@@ -242,7 +242,7 @@ const app = createApp({
         generator: "https://username.github.io/your-app/",
       };
       await this.$graffiti.put(
-        { value: profileObj, channels: [ this.currentActor, "designftw-2025-studio2" ] },
+        { value: profileObj, generator: "https://username.github.io/your-app/", channels: [ this.currentActor, "designftw-2025-studio2" ] },
         this.$graffitiSession.value
       );
       alert("¡Perfil guardado!");
@@ -393,7 +393,7 @@ const app = createApp({
     },
     $graffitiSession: {
       handler(session) {
-        if (session) this.recordLogin(session);
+        if (session.value) this.recordLogin(session.value);
       },
       immediate: true
     },

@@ -43,30 +43,30 @@
             <template v-if="showProfile && currentActor">
                 <div class="profile-backdrop" @click="showProfile = false">
                   <div class="profile-modal" @click.stop>
-                    <h3>Mi Perfil</h3>
+                    <h3>My Profile</h3>
               
-                    <label>Nombre</label>
-                    <input v-model="profileForm.name" placeholder="Tu nombre" />
+                    <label>Name</label>
+                    <input v-model="profileForm.name" placeholder="Your name" />
               
-                    <label>Pronombres</label>
-                    <input v-model="profileForm.pronouns" placeholder="ella/ella" />
+                    <label>Pronouns</label>
+                    <input v-model="profileForm.pronouns" placeholder="they/them" />
               
                     <label>Bio</label>
-                    <textarea v-model="profileForm.bio" placeholder="Una breve bio"></textarea>
+                    <textarea v-model="profileForm.bio" placeholder="A brief bio"></textarea>
               
                     <!-- Nueva sección: foto -->
-                    <label>Foto de perfil</label>
+                    <label>Profile Picture</label>
                     <input type="file" accept="image/*" @change="onFileChange" />
                     <div v-if="profileForm.picture" class="img-preview">
                       <img :src="profileForm.picture" alt="Preview de perfil" class="preview"/>
                     </div>
               
-                    <button class="logic" @click="saveProfile">Guardar perfil</button>
+                    <button class="logic" @click="saveProfile">Save Profile</button>
                     <button
                       class="logic cancel"
                       @click="showProfile = false"
                     >
-                      Cancelar
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -92,7 +92,6 @@
                     <button id="toggleGroupMenu" class="plus-button">+</button>
                     <div id="groupMenu" class="dropdown hidden">
                     <button id="showCreateForm">Create Group</button>
-                    <button id="invitationsBtn" disabled>Invitations</button>
                     </div>
                 </div>
             </div>
@@ -134,8 +133,7 @@
                         <button class="groupchatbutton">
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
                             <div class="text-content">
-                            {{selectedChannel}}
-                            <strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
+                            <strong>{{ getGroupName(selectedChannel) || group.value.object.name }}</strong>
                             </div>
                         </button>
                     </li>
@@ -155,7 +153,7 @@
                         <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
                             <button class="plus-button">く</button>
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                            <h2>{{ getGroupName(selectedChannel) || selectedGroup.value.object.name }}</h2>
+                            <h2>{{ getGroupName(selectedChannel) || selectedGroup?.value.object.name }}</h2>
                             <span class="info-icon">ℹ️</span>
                         </div>
                     </div>
@@ -229,7 +227,7 @@
                     <template v-if="showInviteModal">
                         <div class="profile-backdrop" @click="closeInvite">
                           <div class="profile-modal" @click.stop>
-                            <h3>Invitar a miembro</h3>
+                            <h3>Invite member</h3>
                 
                             <label>Username or URI</label>
                             <input
@@ -245,9 +243,9 @@
                               >{{ u }}</option>
                             </datalist>
                 
-                            <button class="logic" @click="sendInvite">Enviar invitación</button>
+                            <button class="logic" @click="sendInvite">Send Invitation</button>
                             <button class="cancel" @click="closeInvite">
-                              Cancelar
+                              Cancel
                             </button>
                           </div>
                         </div>
@@ -259,7 +257,7 @@
                     <div>
                         <div class="titleGroup" @click="showGroupInfo = !showGroupInfo">
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                            <h2>{{ getGroupName(selectedChannel) || selectedGroup.value.object.name }}</h2>
+                            <h2>{{ getGroupName(selectedChannel) || selectedGroup?.value.object.name }}</h2>
                             <span class="info-icon">ℹ️</span>
                         </div>
                     </div>
@@ -370,7 +368,7 @@
                 <graffiti-discover
                     ref="groupNameDiscover"
                     v-slot="{ objects }"
-                    :channels="['designftw']"
+                    :channels="['channelsPlanChat']"
                     :schema="{
                         properties: {
                         value: {
