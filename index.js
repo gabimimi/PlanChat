@@ -55,6 +55,7 @@ const app = createApp({
       showTaskAssignment: false,
       taskListsByGroup: {},  
       taskNotesByGroup: {}, 
+      rawMessages: []
     };
   },
 
@@ -103,7 +104,7 @@ const app = createApp({
     
       this.taskListsByGroup[this.selectedChannel] = latest.value.tasks || [];
       this.taskNotesByGroup[this.selectedChannel] = latest.value.notes || "";
-      console.log("✅ Loaded tasks via graffiti-discover:", latest.value);
+      console.log("Loaded tasks via graffiti-discover:", latest.value);
     },
     
     removeTask(index) {
@@ -125,7 +126,7 @@ const app = createApp({
         }
       }, this.$graffitiSession.value);
 
-      alert("✅ Tasks saved!");
+      alert("Tasks saved!");
     },
     
     async loadTasks() {
@@ -150,7 +151,7 @@ const app = createApp({
       if (!res.objects.length) {
         this.taskList = [];
         this.taskNotes = "";
-        console.log("📭 No saved tasks for", this.selectedChannel);
+        console.log("No saved tasks for", this.selectedChannel);
         return;
       }
     
@@ -158,7 +159,7 @@ const app = createApp({
         a.value.published > b.value.published ? a : b
       );
     
-      console.log("✅ Loaded tasks for", this.selectedChannel, latest);
+      console.log("Loaded tasks for", this.selectedChannel, latest);
       this.taskList = latest.value.tasks || [];
       this.taskNotes = latest.value.notes || "";
       },
@@ -187,6 +188,10 @@ const app = createApp({
       this.sending = false;
       await this.$nextTick();
       this.$refs.messageInput.focus();
+    },
+
+    onEnter() {
+      this.sendMessage(this.$graffitiSession.value);
     },
 
     async createGroup(session) {
@@ -229,7 +234,7 @@ const app = createApp({
             published: Date.now()
           }
         }, session);
-        // Optional: immediately select the group
+
         this.selectedChannel = newChannel;
         this.groupName = "";
         groupMenu.classList.add('hidden');
@@ -299,8 +304,7 @@ const app = createApp({
           .filter((obj) => obj.value.describes === channel);
       
         if (matches.length === 0) return null;
-      
-        // Pick the one with latest timestamp (if present)
+
         const latest = matches.reduce((a, b) => {
           const aTime = a.value.published ?? a.timestamp ?? 0;
           const bTime = b.value.published ?? b.timestamp ?? 0;
@@ -320,7 +324,7 @@ const app = createApp({
         name:      this.profileForm.name,
         pronouns:  this.profileForm.pronouns,
         bio:       this.profileForm.bio,
-        picture:   this.profileForm.picture,      // ← añadimos aquí
+        picture:   this.profileForm.picture,     
         describes: this.currentActor,
         published: Date.now(),
         generator: "https://username.github.io/your-app/",
@@ -375,7 +379,7 @@ const app = createApp({
         },
         channels: ["users"],
       }, session);
-      console.log("👤 Actor logged in:", session.value.actor);
+      console.log("Actor logged in:", session.value.actor);
     },
 
     openInvite() {
@@ -391,13 +395,13 @@ const app = createApp({
       const entered = this.inviteActor.trim();
     
       if (!entered) {
-        return alert("❌ Please enter a valid username");
+        return alert("Please enter a valid username");
       }
     
       const exists = this.formattedUsers.includes(entered);
       console.log(this.formattedUsers);
       if (!exists || this.groupMembers.includes(entered)) {
-        return alert(`❌ Couldn't send invitation to “${entered}” — user doesn't exist or is already in the group`);
+        return alert(`Couldn't send invitation to “${entered}” — user doesn't exist or is already in the group`);
       }
     
       await this.$graffiti.put({
@@ -415,7 +419,7 @@ const app = createApp({
         await this.saveGroupMembers();
       }
     
-      alert(`✅ Invitation sent to ${entered}`);
+      alert(`Invitation sent to ${entered}`);
       this.closeInvite();
     },
 
@@ -478,7 +482,7 @@ const app = createApp({
         const actor = session?.value?.actor;
         if (!actor) return;
   
-        console.log("✅ Logged in as", actor);
+        console.log("Logged in as", actor);
   
         const alreadyLogged = this.usersObjects.some(
           (obj) => obj.value?.actor === actor
@@ -493,7 +497,7 @@ const app = createApp({
             },
             channels: ["users"]
           }, session.value).then(() => {
-            console.log("📝 Login recorded for:", actor);
+            console.log("Login recorded for:", actor);
           });
         }
   
@@ -577,6 +581,11 @@ const app = createApp({
           [this.selectedChannel]: val
         };
       }
+    },
+    sortedMessages() {
+      return [...(this.rawMessages|| [])].sort((a, b) => {
+        return (a.value.published ?? 0) - (b.value.published ?? 0);
+      });
     }
   },
 

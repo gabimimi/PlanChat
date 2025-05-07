@@ -270,11 +270,12 @@
                         class="task-row"
                         style="display: flex; align-items: center; gap: 0.5em;"
                     >
-                        <input type="checkbox" v-model="task.done" />
+                        <input type="checkbox" v-model="task.done" class="cute-checkbox"/>
                         <input
                         v-model="task.text"
                         placeholder="Task description"
                         style="flex: 1;"
+                        type="text"
                         />
                         <select v-model="task.assignedTo">
                         <option disabled value="">Select</option>
@@ -286,7 +287,7 @@
                             {{ member }}
                         </option>
                         </select>
-                        <button @click="removeTask(index)">❌</button>
+                        <button @click="removeTask(index)" class="removeTask">❌</button>
                     </div>
 
                     <button class="logic" @click="addTask">+ Add Task</button>
@@ -329,7 +330,7 @@
 
                     <graffiti-discover
                         autopoll :channels="[selectedChannel]"
-                        v-slot="{ objects: messageObjects, isInitialPolling }"
+                        v-slot="{ objects, isInitialPolling }"
                         :channels="[selectedChannel]"
                         :schema="{
                         properties: {
@@ -343,9 +344,10 @@
                         }
                         }"
                     >
+                        <div style="display: none">{{ rawMessages = objects }}</div>
                         
                         <ul class="messages" ref="messagesContainer">
-                        <li v-for="object in messageObjects" :key="object.url" class="chat-message">
+                        <li v-for="object in sortedMessages" :key="object.url" class="chat-message">
                             <div class="miMensaje" v-if="object.actor === $graffitiSession.value.actor">
                                 <div class="message-header" >
                                     <span class="authorMe" >{{ object.actor }} (you)</span>
@@ -397,7 +399,14 @@
 
                     <form @submit.prevent="sendMessage($graffitiSession.value)">
                         <fieldset :disabled="sending">
-                        <input type="text" v-model="myMessage" placeholder="Message" ref="messageInput" />
+                            <textarea
+                            class="chat-input"
+                            v-model="myMessage"
+                            placeholder="Message"
+                            ref="messageInput"
+                            rows="2" 
+                            @keydown.enter.prevent="onEnter"
+                          ></textarea>
                         <input type="submit" :value="sending ? 'Sending...' : '➤'" />
                         </fieldset>
                     </form>

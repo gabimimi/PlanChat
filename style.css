@@ -6,7 +6,8 @@
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
-  
+
+
   body {
     background-color: #f4f4f9;
     color: #333;
@@ -113,6 +114,7 @@
     border: 1px solid #ced6e0;
     border-radius: 4px;
     margin-bottom: 10px;
+
   }
   
   .chat-area fieldset {
@@ -123,7 +125,7 @@
     width: 100%;
   }
   
-  .chat-area button:not(.option, .plus-button, .pinButton, .cancel) {
+  .chat-area button:not(.option, .plus-button, .pinButton, .cancel, .removeTask) {
     font-size: 14px;
     padding: 8px 15px;
     margin-left: 10px;
@@ -149,7 +151,7 @@
   }
   
   .chat-area input[type="submit"]:hover,
-  .chat-area button:hover:not(.plus-button, .cancel) {
+  .chat-area button:hover:not(.plus-button, .cancel, .removeTask) {
     background-color: rgb(109, 124, 180);
   }
 
@@ -321,8 +323,11 @@
     flex-direction: row;
  }
 
- form{
+ form *{
   display: flex;
+  flex-direction: row;
+  align-items: center;
+
  }
 
  .newGroupChat, .editText {
@@ -406,7 +411,7 @@
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 100%;
-  word-wrap: break-word;
+
   font-size: 0.95rem;
 }
 
@@ -821,15 +826,16 @@
   align-items: center;
   gap: 0.5em;
   margin-bottom: 0.5em;
+  justify-content: space-between;
 }
 
 /* Task description text field */
-.task-row input[type="text"],
-.task-row input[v-model="task.text"] {
+.task-row input[type = "text"]{
   flex: 1;
   padding: 0.4em;
   border: 1px solid #ccc;
   border-radius: 4px;
+  margin: 0;
 }
 
 /* Assignee dropdown */
@@ -839,9 +845,16 @@
   border: 1px solid #ccc;
 }
 
+.task-row select:hover{
+  background-color: #ffffff;
+  border-color: #9BAFFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.02);
+}
+
 /* Remove task button */
 .task-row button {
-  background-color: #ff4d4d;
+  background-color: #d8d8d8;
   color: white;
   border: none;
   border-radius: 4px;
@@ -850,7 +863,7 @@
 }
 
 .task-row button:hover {
-  background-color: #e60000;
+  background-color: #8d8b8b;
 }
 
 /* Action buttons */
@@ -859,7 +872,68 @@
   margin-right: 0.5em;
 }
 
+.cute-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #b5c3f9;
+  border-radius: 6px;
+  background-color: #c7d1f8;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
 
+.cute-checkbox:checked {
+  background-color: #b5c3f9;
+  border-color: #466bff;
+  animation: pop 0.3s ease;
+}
+
+.cute-checkbox:checked::after {
+  content: "✓";
+  color: #466bff;
+  font-size: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+/* 2) Estilos para tu nuevo textarea de chat */
+.chat-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced6e0;
+  border-radius: 4px;
+  resize: none;               /* opcional: impide que el usuario lo haga más grande */
+  font-size: 16px;
+
+}
+
+
+/* fix overflow in messages */
+input[type = "text"] {
+  overflow-wrap: anywhere;
+}
+
+.message-bubble{
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
 
 
 @keyframes fadeInUp {
