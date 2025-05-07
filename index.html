@@ -17,9 +17,9 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="app" v-if="$graffitiSession.value">
+    <div id="app" >
 
-        <div class="sidebar">
+        <div class="sidebar" v-if="currentActor">
             <div
                 class="profile-toggle"
                 v-if="currentActor"
@@ -39,7 +39,6 @@
                 ></avatar-icon>
             </div>
 
-            <!-- Panel de edición de perfil -->
             <template v-if="showProfile && currentActor">
                 <div class="profile-backdrop" @click="showProfile = false">
                   <div class="profile-modal" @click.stop>
@@ -54,7 +53,6 @@
                     <label>Bio</label>
                     <textarea v-model="profileForm.bio" placeholder="A brief bio"></textarea>
               
-                    <!-- Nueva sección: foto -->
                     <label>Profile Picture</label>
                     <input type="file" accept="image/*" @change="onFileChange" />
                     <div v-if="profileForm.picture" class="img-preview">
@@ -89,20 +87,21 @@
 
 
                 <div class="create-group-wrapper">
-                    <button id="toggleGroupMenu" class="plus-button">+</button>
-                    <div id="groupMenu" class="dropdown hidden">
-                    <button id="showCreateForm">Create Group</button>
+                    <button class="plus-button" @click="toggleGroupDropdown">+</button>
+                  
+                    <div class="dropdown" v-if="showGroupDropdown">
+                      <button @click="showCreateForm = true; showGroupDropdown = false">Create Group</button>
                     </div>
-                </div>
+                  </div>
             </div>
             
             <!-- Create Group Form -->
-            <div class=" header">
-                <form @submit.prevent="createGroup($graffitiSession.value)" class="hidden" id="createGroupForm">
-                <input class="newGroupChat" type="text" v-model="groupName" placeholder="Group Chat Name" id="createGroupId" required />
-                <button class="logic" type="submit">Create Group</button>
+            <div class="header" v-if="showCreateForm">
+                <form @submit.prevent="createGroup($graffitiSession.value)">
+                  <input class="newGroupChat" type="text" v-model="groupName" placeholder="Group Chat Name" required />
+                  <button class="logic" type="submit">Create Group</button>
                 </form>
-            </div>
+              </div>
 
             <!-- Group Chat List -->
             <graffiti-discover
@@ -129,11 +128,12 @@
             >
             <div class="chats">
                 <ul class="group-chat-list">
-                    <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel, showGroupInfo = false, selectedGroup= group">
+                    <li v-for="group in groupChatObjects" :key="group.url" class="group-chat-item" @click="selectedChannel = group.value.object.channel; showGroupInfo = false; selectedGroup= group; showTaskAssignment = false">
                         <button class="groupchatbutton">
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
                             <div class="text-content">
-                            <strong>{{ getGroupName(selectedChannel) || group.value.object.name }}</strong>
+                            <strong><strong>{{ getGroupName(group.value.object.channel) || group.value.object.name }}</strong>
+                            </strong>
                             </div>
                         </button>
                     </li>
@@ -141,12 +141,12 @@
             </div>
             </graffiti-discover>
         </div>
-        <div class="chat-area">
+        <div class="chat-area" v-if="currentActor">
             
 
             <!-- Group Chat View -->
             <template v-if="selectedChannel">
-                <div class="group-info-panel" v-if="showGroupInfo">
+                <div class="group-info-panel" v-if="showGroupInfo && !showTaskAssignment">
 
                     <div>
                         
@@ -174,6 +174,8 @@
                           <label>Description:</label>
                           <textarea v-model="groupDescription"></textarea>
                         </div>
+                        <button class="logic" @click="showTaskAssignment = true, loadTasks">🗒️ Edit Task Assignment</button>
+
                         <!-- more settings can go here -->
                       </div>
                   
@@ -233,11 +235,11 @@
                             <input
                               list="usersList"
                               v-model="inviteActor"
-                              placeholder="Pega URI o elige usuario"
+                              placeholder="Add a User"
                             />
                             <datalist id="usersList">
                               <option
-                                v-for="u in allUsers"
+                                v-for="u in setUsers"
                                 :key="u"
                                 :value="u"
                               >{{ u }}</option>
@@ -251,7 +253,46 @@
                         </div>
                       </template>
 
-                  </div>
+                </div>
+
+                <div class="group-info-panel" v-if="showTaskAssignment">
+                    <div class="titleGroup taskAssignmentTitle">
+                        <h2>Task Assignment</h2>
+                    </div>
+                                        
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" v-model="taskNotes" placeholder="Add notes if desired"></textarea>
+
+                    <h3>Tasks</h3>
+                    <div
+                        v-for="(task, index) in taskList"
+                        :key="index"
+                        class="task-row"
+                        style="display: flex; align-items: center; gap: 0.5em;"
+                    >
+                        <input type="checkbox" v-model="task.done" />
+                        <input
+                        v-model="task.text"
+                        placeholder="Task description"
+                        style="flex: 1;"
+                        />
+                        <select v-model="task.assignedTo">
+                        <option disabled value="">Select</option>
+                        <option
+                            v-for="member in groupMembers"
+                            :key="member"
+                            :value="member"
+                        >
+                            {{ member }}
+                        </option>
+                        </select>
+                        <button @click="removeTask(index)">❌</button>
+                    </div>
+
+                    <button class="logic" @click="addTask">+ Add Task</button>
+                    <button class="logic" @click="saveTasks(); showTaskAssignment = false">Save</button>
+
+                </div>
 
                 <div v-if="!showGroupInfo" class="chat-messages-panel">
                     <div>
@@ -386,7 +427,14 @@
             </template>
         
         </div>
+        <div class="login-screen" v-if="!currentActor">
 
+            <div class="login-card">
+                <h1>Welcome to PlanChat ✨</h1>
+                <p class="tagline">A cozy space for your group chats.</p>
+                <button class="login-button" @click="login">Log In</button>
+              </div>
+        </div>
         <graffiti-discover
             ref="profileDiscover"
             :channels="[currentActor]"
@@ -409,7 +457,30 @@
             <!-- Asignamos a la data reactiva -->
             <div style="display:none">{{ profileObjects = objects }}</div>
         </graffiti-discover>
-
+        <graffiti-discover
+            ref="tasksDiscover"
+            :key="selectedChannel"
+            
+            :channels="[selectedChannel]"
+            :schema="{
+                properties: {
+                value: {
+                    required: ['activity','tasks','published'],
+                    properties: {
+                    activity: { const: 'Tasks' },
+                    tasks:    { type: 'array' },
+                    notes:    { type: 'string' },
+                    published:{ type: 'number' }
+                    }
+                }
+                }
+            }"
+            v-slot="{ objects }"
+            >
+            <div style="display: none">
+                {{ updateTaskState(objects) }}
+            </div>
+        </graffiti-discover>
         
 
     </div>

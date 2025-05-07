@@ -720,6 +720,159 @@
   transform: scale(1.1);
 }
 
+.login-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(246, 186, 158, 1), #9BAFFF);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  width: 100%;
+}
+
+.login-card {
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  max-width: 360px;
+  width: 100%;
+  animation: fadeInUp 0.6s ease;
+}
+
+.login-card h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.tagline {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.login-button {
+  background: #9BAFFF;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.login-button:hover {
+  background: #606d9e;
+}
+
+/* task tab css */
+
+/* Main task assignment panel */
+.task-assignment {
+  padding: 1em;
+  background-color: #f9f9f9;
+  border-left: 2px solid #ccc;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Title header */
+.taskAssignmentTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 1em;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.5em;
+}
+
+.taskAssignmentTitle h2 {
+  font-size: 1.5em;
+  color: #333;
+  margin: 0;
+}
+
+/* Notes textarea */
+#notes {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.5em;
+  margin-bottom: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Section heading for task list */
+.task-assignment h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-size: 1.2em;
+  color: #444;
+}
+
+/* Individual task rows */
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* Task description text field */
+.task-row input[type="text"],
+.task-row input[v-model="task.text"] {
+  flex: 1;
+  padding: 0.4em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Assignee dropdown */
+.task-row select {
+  padding: 0.3em;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+/* Remove task button */
+.task-row button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4em 0.6em;
+  cursor: pointer;
+}
+
+.task-row button:hover {
+  background-color: #e60000;
+}
+
+/* Action buttons */
+.task-assignment .logic {
+  margin-top: 0.75em;
+  margin-right: 0.5em;
+}
+
+
+
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
   /* Responsive */
   @media (max-width: 768px) {
     #app {

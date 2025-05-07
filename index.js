@@ -49,7 +49,12 @@ const app = createApp({
       profileObjects: [],
       showInviteModal: false,
       inviteActor: "",
-      membersObjects: []
+      membersObjects: [],
+      showGroupDropdown: false,
+      showCreateForm: false,
+      showTaskAssignment: false,
+      taskListsByGroup: {},  
+      taskNotesByGroup: {}, 
     };
   },
 
@@ -63,7 +68,8 @@ const app = createApp({
                     required: ['activity'],
                     properties: {
                     activity: { const: 'Login' }
-                    }
+                    },
+                    required: ["activity"]
                 }
                 }
             }
@@ -75,15 +81,93 @@ const app = createApp({
   methods: {
     async login() {
       await this.$graffiti.login();
-      if (!this.usersObjects.includes(this.currentActor)){
-        const out = await this.$graffiti.put({value: { activity: 'Login', actor: this.currentActor,}, channels: ['users']}, this.$graffitiSession.value);
-      }
-       
-      console.log("done!")
-      console.log(out)
+      console.log("🪪 Login dialog closed.");
     },
+    
+    addTask() {
+      this.taskList = [
+        ...this.taskList,
+        { text: "", assignedTo: "", done: false }
+      ];
+    },
+
+    updateTaskState(objects) {
+      if (this.showTaskAssignment) return
+
+      if (!Array.isArray(objects) || !this.selectedChannel) return;
+      const mine = objects.filter(o => o.value.activity === 'Tasks');
+      if (!mine.length) return;
+      const latest = mine.reduce((a, b) =>
+        (a.value.published ?? 0) > (b.value.published ?? 0) ? a : b
+      );
+    
+      this.taskListsByGroup[this.selectedChannel] = latest.value.tasks || [];
+      this.taskNotesByGroup[this.selectedChannel] = latest.value.notes || "";
+      console.log("✅ Loaded tasks via graffiti-discover:", latest.value);
+    },
+    
+    removeTask(index) {
+      const updated = [...this.taskList];
+      updated.splice(index, 1);
+      this.taskList = updated;
+    },
+    
+    async saveTasks() {
+      if (!this.selectedChannel) return;
+
+      await this.$graffiti.put({
+        channels: [this.selectedChannel],
+        value: {
+          activity: "Tasks",
+          notes: this.taskNotes,
+          tasks: this.taskList,
+          published: Date.now()
+        }
+      }, this.$graffitiSession.value);
+
+      alert("✅ Tasks saved!");
+    },
+    
+    async loadTasks() {
+    // if (!this.selectedChannel) return;
+    
+    // const res = await this.$graffiti.query({
+    //   channels: [this.selectedChannel],
+    //   filters: [{ field: "value.activity", equals: "Tasks" }]
+    // });
+    // grab the graffiti session
+      const session = this.$graffitiSession.value;
+      if (!this.selectedChannel || !session?.store) {
+        console.warn("No channel or no graffiti store available");
+        return;
+      }
+      // query via the session's store
+      const res = await session.store.query({
+        channels: [this.selectedChannel],
+        filters: [{ field: "value.activity", equals: "Tasks" }]
+      });
+        
+      if (!res.objects.length) {
+        this.taskList = [];
+        this.taskNotes = "";
+        console.log("📭 No saved tasks for", this.selectedChannel);
+        return;
+      }
+    
+      const latest = res.objects.reduce((a, b) =>
+        a.value.published > b.value.published ? a : b
+      );
+    
+      console.log("✅ Loaded tasks for", this.selectedChannel, latest);
+      this.taskList = latest.value.tasks || [];
+      this.taskNotes = latest.value.notes || "";
+      },
+
     toggleMessageMenu(message) {
       this.activeMenu = this.activeMenu === message ? null : message;
+    },
+    toggleGroupDropdown() {
+      this.showGroupDropdown = !this.showGroupDropdown;
     },
     async sendMessage(session) {
       if (!this.myMessage || !this.selectedChannel) return;
@@ -250,29 +334,26 @@ const app = createApp({
     },
 
     async loadProfile() {
-      if (!this.currentActor) return;
-
-      // Obtén todos los objetos en tu canal
-      const res = await this.$graffiti.query({
-        channels: [this.currentActor],
+      if (!this.currentActor || !this.$graffitiSession.value?.store) return;
+    
+      const res = await this.$graffitiSession.value.store.query({
+        channels: [this.currentActor]
       });
-
-      // Filtra solo los que describen a tu actor
+    
       const objs = res.objects.filter(
         (o) => o.value.describes === this.currentActor
       );
-
+    
       if (!objs.length) return;
-
-      // Elige el más reciente
+    
       const latest = objs.reduce((a, b) =>
         a.value.published > b.value.published ? a : b
       );
-
-      // Rellena el formulario
+    
       this.profileForm.name     = latest.value.name;
       this.profileForm.pronouns = latest.value.pronouns;
       this.profileForm.bio      = latest.value.bio;
+      this.profileForm.picture  = latest.value.picture ?? "./individualavatar.png";
     },
 
     onFileChange(event) {
@@ -294,6 +375,7 @@ const app = createApp({
         },
         channels: ["users"],
       }, session);
+      console.log("👤 Actor logged in:", session.value.actor);
     },
 
     openInvite() {
@@ -306,41 +388,36 @@ const app = createApp({
     },
 
     async sendInvite() {
-      console.log(this.usersObjects);
       const entered = this.inviteActor.trim();
+    
       if (!entered) {
         return alert("❌ Please enter a valid username");
       }
-  
-
-      console.log("output de:", this.allUsers);
-      let target = this.allUsers.find(u => u === entered);
-
-      if (!target || this.groupMembers.includes(target)) {
-        return alert("❌ Couldn't send invitation to “${entered}”, the user either doesn't exist or is already in the group chat");
+    
+      const exists = this.formattedUsers.includes(entered);
+      console.log(this.formattedUsers);
+      if (!exists || this.groupMembers.includes(entered)) {
+        return alert(`❌ Couldn't send invitation to “${entered}” — user doesn't exist or is already in the group`);
       }
-  
-
+    
       await this.$graffiti.put({
         value: {
-          activity:  "Invite",
-          group:     this.selectedChannel,
-          from:      this.currentActor,
+          activity: "Invite",
+          group: this.selectedChannel,
+          from: this.currentActor,
           published: Date.now()
         },
-        channels: [ target ]
+        channels: [entered]
       }, this.$graffitiSession.value);
-  
-
-      if (!this.groupMembers.includes(target)) {
-        this.groupMembers.push(target);
+    
+      if (!this.groupMembers.includes(entered)) {
+        this.groupMembers.push(entered);
         await this.saveGroupMembers();
       }
-  
-      alert("✅ Invitation sent to ${target}, user will be added if they accept the invitation");
+    
+      alert(`✅ Invitation sent to ${entered}`);
       this.closeInvite();
     },
-
 
 
     async saveGroupMembers() {
@@ -391,9 +468,36 @@ const app = createApp({
      $graffitiSession(session) {
       this.loadProfile();
     },
+    selectedChannel(newChannel) {
+      if (newChannel) {
+        this.loadTasks();
+      }
+    },
     $graffitiSession: {
       handler(session) {
-        if (session.value) this.recordLogin(session.value);
+        const actor = session?.value?.actor;
+        if (!actor) return;
+  
+        console.log("✅ Logged in as", actor);
+  
+        const alreadyLogged = this.usersObjects.some(
+          (obj) => obj.value?.actor === actor
+        );
+  
+        if (!alreadyLogged) {
+          this.$graffiti.put({
+            value: {
+              activity: "Login",
+              actor,
+              published: Date.now()
+            },
+            channels: ["users"]
+          }, session.value).then(() => {
+            console.log("📝 Login recorded for:", actor);
+          });
+        }
+  
+        this.loadProfile();
       },
       immediate: true
     },
@@ -433,7 +537,46 @@ const app = createApp({
       return this.$graffitiSession.value?.actor ?? null;
     },
     allUsers() {
-      return this.usersObjects.map((o) => o.actor);
+      return Array.isArray(this.usersObjects)
+          ? this.usersObjects.map((o) => o.actor? o.actor : '')
+          : [];
+    },
+    setUsers() {
+      return new Set(this.allUsers);
+    },
+    formattedUsers() {
+      return Array.from(this.setUsers).map(actor => {
+        let display;
+        try {
+          const url = new URL(actor);
+          display = url.pathname.replace(/^\/+/, ''); // get user from URL
+        } catch {
+          display = actor;
+        }
+        return display;
+      });
+    }, 
+    taskList: {
+      get() {
+        return this.taskListsByGroup[this.selectedChannel] || [];
+      },
+      set(val) {
+        this.taskListsByGroup = {
+          ...this.taskListsByGroup,
+          [this.selectedChannel]: val
+        };
+      }
+    },
+    taskNotes: {
+      get() {
+        return this.taskNotesByGroup[this.selectedChannel] || "";
+      },
+      set(val) {
+        this.taskNotesByGroup = {
+          ...this.taskNotesByGroup,
+          [this.selectedChannel]: val
+        };
+      }
     }
   },
 
@@ -447,12 +590,11 @@ const app = createApp({
       { immediate: true }
       
     );
-
+    
     this.$watch(
       () => this.$refs.profileDiscover?.$data.objects,
       (objs) => {
         if (!objs || objs.length === 0) return;
-        // Elegir el objeto más reciente según published
         const latest = objs.reduce((a, b) =>
           (a.value.published > b.value.published ? a : b)
         );
@@ -483,6 +625,25 @@ const app = createApp({
         },
         { immediate: true }
       );
+
+      //const toggleMenuBtn = document.getElementById('toggleGroupMenu');
+      const groupMenu = document.getElementById('groupMenu');
+      const showCreateFormBtn = document.getElementById('showCreateForm');
+      const createGroupForm = document.getElementById('createGroupForm');
+
+      // if (toggleMenuBtn && groupMenu) {
+      //   toggleMenuBtn.addEventListener('click', () => {
+      //     groupMenu.classList.toggle('hidden');
+      //   });
+      // }
+
+      if (showCreateFormBtn && groupMenu && createGroupForm) {
+        showCreateFormBtn.addEventListener('click', () => {
+          groupMenu.classList.add('hidden');
+          createGroupForm.classList.toggle('hidden');
+          createGroupForm.classList.toggle('showing');
+        });
+      }
     });
 
     const session = this.$graffitiSession.value;
@@ -508,7 +669,38 @@ const app = createApp({
       },
       { immediate: true }
     );
+
+    this.$watch(
+      () => this.$graffitiSession.value?.actor,
+      (newActor, oldActor) => {
+        if (newActor && newActor !== oldActor) {
+          console.log("✅ Actor logged in:", newActor);
+  
+          // Optionally log to 'users' channel
+          const alreadyLogged = this.usersObjects.some(
+            (obj) => obj.value?.actor === newActor
+          );
+  
+          if (!alreadyLogged) {
+            this.$graffiti.put({
+              value: {
+                activity: "Login",
+                actor: newActor,
+                published: Date.now()
+              },
+              channels: ["users"]
+            }, this.$graffitiSession.value).then(() => {
+              console.log("📝 Login recorded for:", newActor);
+            });
+          }
+  
+          this.loadProfile();
+        }
+      },
+      { immediate: true }
+    );
   },
+
 
 });
 
@@ -521,18 +713,3 @@ app
   .mount("#app");
 
 
-
-const toggleMenuBtn = document.getElementById('toggleGroupMenu');
-const groupMenu = document.getElementById('groupMenu');
-const showCreateFormBtn = document.getElementById('showCreateForm');
-const createGroupForm = document.getElementById('createGroupForm');
-
-toggleMenuBtn.addEventListener('click', () => {
-  groupMenu.classList.toggle('hidden');
-});
-
-showCreateFormBtn.addEventListener('click', () => {
-  groupMenu.classList.add('hidden');
-  createGroupForm.classList.toggle('hidden');
-  createGroupForm.classList.toggle('showing');
-});
