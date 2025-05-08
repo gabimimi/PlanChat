@@ -214,7 +214,7 @@
                             </graffiti-discover>
 
                             <!-- 3) Luego el nombre -->
-                            <span class="member-name">{{ member }}</span>
+                            <span class="member-name">{{ shortName(member) }}</span>
                             </li>
                         </ul>
 
@@ -242,7 +242,7 @@
                                 v-for="u in setUsers"
                                 :key="u"
                                 :value="u"
-                              >{{ u }}</option>
+                              >{{ shortName(u) }}</option>
                             </datalist>
                 
                             <button class="logic" @click="sendInvite">Send Invitation</button>
@@ -284,7 +284,7 @@
                             :key="member"
                             :value="member"
                         >
-                            {{ member }}
+                            {{ shortName(member) }}
                         </option>
                         </select>
                         <button @click="removeTask(index)" class="removeTask">❌</button>
@@ -350,7 +350,7 @@
                         <li v-for="object in sortedMessages" :key="object.url" class="chat-message">
                             <div class="miMensaje" v-if="object.actor === $graffitiSession.value.actor">
                                 <div class="message-header" >
-                                    <span class="authorMe" >{{ object.actor }} (you)</span>
+                                    <span class="authorMe" >{{ shortName(object.actor) }} (you)</span>
 
                                     
                                 </div>
@@ -383,7 +383,7 @@
                             </div>
                             <div class="otroMensaje" v-else>
                                 <div class="message-header">
-                                    <span class="author">{{ object.actor }}</span>
+                                    <span class="author">{{ shortName(object.actor) }}</span>
                                 </div>
 
                                 

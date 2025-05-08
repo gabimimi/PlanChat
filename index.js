@@ -398,10 +398,16 @@ const app = createApp({
         return alert("Please enter a valid username");
       }
     
-      const exists = this.formattedUsers.includes(entered);
-      console.log(this.formattedUsers);
-      if (!exists || this.groupMembers.includes(entered)) {
-        return alert(`Couldn't send invitation to “${entered}” — user doesn't exist or is already in the group`);
+      const fullWebId = this.allUsers.find(u => this.shortName(u) === entered) || entered;
+
+      // Check if the fullWebId is a known user
+      const exists = this.allUsers.includes(fullWebId);
+      if (!exists) {
+        return alert(`User “${entered}” not found.`);
+      }
+
+      if (this.groupMembers.includes(fullWebId)) {
+        return alert(`User “${entered}” is already in the group.`);
       }
     
       await this.$graffiti.put({
@@ -411,18 +417,23 @@ const app = createApp({
           from: this.currentActor,
           published: Date.now()
         },
-        channels: [entered]
+        channels: [fullWebId]
       }, this.$graffitiSession.value);
     
-      if (!this.groupMembers.includes(entered)) {
-        this.groupMembers.push(entered);
-        await this.saveGroupMembers();
-      }
-    
+      this.groupMembers.push(fullWebId);
+      await this.saveGroupMembers();
+
       alert(`Invitation sent to ${entered}`);
       this.closeInvite();
     },
 
+    shortName(uri) {
+      try {
+        return new URL(uri).pathname.replace(/^\/+/, '');
+      } catch {
+        return uri;
+      }
+    },
 
     async saveGroupMembers() {
       if (!this.selectedChannel) return;
@@ -720,5 +731,3 @@ app
     graffiti: new GraffitiRemote(),
   })
   .mount("#app");
-
-
