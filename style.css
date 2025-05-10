@@ -323,11 +323,15 @@
     flex-direction: row;
  }
 
+ form{
+  width: 100%;
+  display: flex;
+
+ }
  form *{
   display: flex;
   flex-direction: row;
   align-items: center;
-
  }
 
  .newGroupChat, .editText {
@@ -1011,7 +1015,27 @@ input[type = "text"] {
 .fade-enter-from,
 .fade-leave-to { opacity: 0 }
 
+.loading-backdrop {
+  position: fixed;
+  inset: 0;                          
+  background: rgba(0,0,0,0.45);      
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;                    
+  pointer-events: all;               
+}
 
+.loading-gif {
+  width: 96px;   
+  height: 96px;
+}
+
+
+.fade-enter-active,
+.fade-leave-active { transition: opacity .2s }
+.fade-enter-from,
+.fade-leave-to     { opacity: 0 }
 
 @keyframes fadeInUp {
   from {

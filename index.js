@@ -59,6 +59,11 @@ const app = createApp({
       pendingDeletes: [],   // { type:'message'|'task', item, timer }[]
       toast: null,
       hiddenMessageIds: new Set(),
+      isLoading: false,
+      loaderId: null,
+      groupsLoaded: false, 
+      profileLoaded: false,
+      messagesLoaded: false
     };
   },
 
@@ -343,28 +348,39 @@ const app = createApp({
     },
 
     async renameGroup() {
-      if (!this.newGroupName || !this.selectedChannel) return;
+      if (!this.newGroupName.trim() || !this.selectedChannel) return;
     
-      await this.$graffiti.put(
-        {
-          value: {
-            name: this.newGroupName,
-            describes: this.selectedChannel,
+      this.isLoading = true;                 
+      try {
+        await this.$graffiti.put(
+          {
+            value: {
+              name: this.newGroupName.trim(),
+              describes: this.selectedChannel
+            },
+            channels: ["channelsPlanChat"]
           },
-          channels: ["channelsPlanChat"],
-        },
-        this.$graffitiSession.value
-      );
+          this.$graffitiSession.value
+        );
     
-      this.newGroupName = "";
-    
+        this.newGroupName = "";
+      } catch (err) {
+        console.error(err);
+        alert("Could not rename the group.");
+      } finally {
+        this.isLoading = false;              
+      }
+    },
 
-      const latestGroupObjects = await this.$graffiti.query({
-        channels: ["channelsPlanChat"],
-        filters: [{ field: "value.describes", equals: this.selectedChannel }],
-      });
-    
-      this.updateGroupNameObjects(latestGroupObjects.objects);
+
+    showLoader() {
+      clearTimeout(this.loaderId);
+      this.loaderId = setTimeout(() => (this.isLoading = true), 250);
+    },
+    /** hide immediately */
+    hideLoader() {
+      clearTimeout(this.loaderId);
+      this.isLoading = false;
     },
 
     getGroupName(channel) {
@@ -560,8 +576,30 @@ const app = createApp({
      $graffitiSession(session) {
       this.loadProfile();
     },
-    selectedChannel(newChannel) {
-      if (newChannel) {
+    selectedChannel(newChan, oldChan) {
+      if (newChan && newChan !== oldChan) {
+        /* 1️⃣  show overlay immediately */
+        this.showLoader();
+        this.messagesLoaded = false;
+  
+        /* 2️⃣  clear previous list so length starts at 0 */
+        this.rawMessages = [];
+  
+        /* 3️⃣  wait until first batch of messages arrives */
+        const stop = this.$watch(
+          () => this.rawMessages.length,
+          len => {
+            if (len > 0) {
+              this.messagesLoaded = true;
+              this.hideLoader();   // overlay disappears
+              stop();              // stop watching
+            }
+          },
+          { immediate: false }
+        );
+      }
+      /* Existing task-loading logic stays: */
+      if (newChan) {
         this.loadTasks();
       }
     },
@@ -619,7 +657,53 @@ const app = createApp({
           this.updateMembers(Array.isArray(objs) ? objs : []);
         },
         immediate: true
+    },
+
+    showGroupInfo(newVal) {
+      if (newVal) {
+        /* user just opened the info panel */
+        if (!this.selectedGroup?.value.object.description) {
+          this.showLoader();
+          /* wait until description appears or 5 s pass */
+          const stop = this.$watch(
+            () => this.selectedGroup?.value.object.description,
+            desc => {
+              if (desc) { this.hideLoader(); stop(); }
+            },
+            { immediate: true }
+          );
+          setTimeout(() => { this.hideLoader(); stop(); }, 5000);
+        }
+      } else {
+        /* panel closed */
+        this.hideLoader();
       }
+    },
+
+    '$graffitiSession.value.actor': {
+      immediate: false,
+      handler(actor, old) {
+        if (actor && actor !== old) {
+          // show spinner, but FIRST see if data is already cached
+      this.showLoader();
+          
+      // mark as loaded immediately if the arrays are already present
+      if (this.groupNameObjects.length) {
+             this.groupsLoaded = true;
+           }
+           if (this.profileObjects.some(
+                 o => o.value.describes === actor)) {
+             this.profileLoaded = true;
+           }
+      
+      if (this.groupsLoaded && this.profileLoaded) {
+        this.hideLoader();      // everything was cached – hide right away
+      }          // ← now it exists
+        } else if (!actor) {
+          this.hideLoader();
+        }
+      }
+    }
 
 
   },
@@ -690,6 +774,42 @@ const app = createApp({
   },
 
   mounted() {
+
+    // 1️⃣  Hoisted helper (function declaration is hoisted)
+    const maybeHideGlobal = () => {
+      if (this.groupsLoaded && this.profileLoaded) {
+        console.log('both done');
+        this.hideLoader();}
+    };
+
+    // 2️⃣  Now the watchers can safely call it
+    this.$watch(                                       // GROUP LIST
+      () => this.groupNameObjects.length,              // ← reactive
+      len => {
+        if (len) {
+          console.log('groups loaded');
+          this.groupsLoaded = true;
+          maybeHideGlobal();
+        }
+      },
+      { immediate: true }
+    );
+    
+    this.$watch(                                       // PROFILE
+      () => this.profileObjects.some(
+            o => o.value.describes === this.currentActor),
+      loaded => {
+        if (loaded) {
+          console.log('profile loaded');
+          this.profileLoaded = true;
+          maybeHideGlobal();
+        }
+      },
+      { immediate: true }
+    );
+
+
+
     this.loadProfile();
     const unwatch = this.$watch(
       () => this.$refs.groupNameDiscover?.$data?.objects,
