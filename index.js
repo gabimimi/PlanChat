@@ -36,7 +36,7 @@ const app = createApp({
       groupNameObjects: [],
       activeMenu: null,
       showGroupInfo: false,
-      groupDescription: 'This is a sample group description.',
+      showGroupInfo: false,
       groupMembers: [],
       isLoggedIn: false,
       showProfile: false,
@@ -244,21 +244,29 @@ const app = createApp({
     },
 
     async saveDescription () {
-      if (!this.selectedGroup) return;
+      if (!this.selectedChannel) return;
+    
+      // Find the newest Create-object for this channel
+      const latest = this.groupChatObjects
+        .filter(o => o.value.object.channel === this.selectedChannel)
+        .reduce((a, b) =>
+          (a.value.published ?? a.timestamp ?? 0) >
+          (b.value.published ?? b.timestamp ?? 0) ? a : b
+        );
     
       await this.$graffiti.patch(
         {
-          value: [
-            {
-              op:   "replace",          // or "add" if it was missing
-              path: "/object/description",
-              value: this.groupDescription
-            }
-          ]
+          value: [{
+            op:   latest.value.object.description ? "replace" : "add",
+            path: "/object/description",
+            value: this.groupDescription
+          }]
         },
-        this.selectedGroup,            // ← the Create-object you discovered
+        latest,
         this.$graffitiSession.value
       );
+    
+      alert("Description saved!");
     },
 
     startEdit(message) {
@@ -561,8 +569,15 @@ const app = createApp({
           this.updateMembers(Array.isArray(objs) ? objs : []);
         },
         immediate: true
-      }
+      },
 
+    groupChatObjects (list) {
+      if (!this.selectedChannel) return;
+      const fresh = list.find(
+        o => o.value.object.channel === this.selectedChannel
+      );
+      if (fresh) this.selectedGroup = fresh;
+    }
 
   },
 
@@ -618,13 +633,15 @@ const app = createApp({
       });
     },
 
-    get() {
-      return this.selectedGroup?.value.object.description || "";
-    },
-    set(val) {
-      if (!this.selectedGroup) return;
-      // keep it reactive locally
-      this.selectedGroup.value.object.description = val;
+    groupDescription: {
+      get () {
+        return this.selectedGroup?.value.object.description || "";
+      },
+      set (val) {
+        if (this.selectedGroup) {
+          this.selectedGroup.value.object.description = val;
+        }
+      }
     }
   },
 
