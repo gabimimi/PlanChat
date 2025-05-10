@@ -516,7 +516,14 @@
             >
             <div style="display:none">{{ updateDescriptionState(objects) }}</div>
         </graffiti-discover>
-
+        <!-- Undo toast -->
+        <transition name="fade">
+            <div v-if="toast" class="undo-toast">
+            {{ toast.text }}
+            <button @click="toast.undo()">Undo</button>
+            </div>
+        </transition>
+  
     </div>
 
     

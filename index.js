@@ -55,7 +55,10 @@ const app = createApp({
       showTaskAssignment: false,
       taskListsByGroup: {},  
       taskNotesByGroup: {}, 
-      rawMessages: []
+      rawMessages: [],
+      pendingDeletes: [],   // { type:'message'|'task', item, timer }[]
+      toast: null,
+      hiddenMessageIds: new Set(),
     };
   },
 
@@ -108,9 +111,24 @@ const app = createApp({
     },
     
     removeTask(index) {
-      const updated = [...this.taskList];
-      updated.splice(index, 1);
-      this.taskList = updated;
+      const task = this.taskList[index];
+      this.taskList = this.taskList.filter((_, i) => i !== index);
+    
+      const record = { item: task, timerId: null };
+    
+      record.timerId = setTimeout(() => {
+        this.saveTasks();                           // commit list without task
+        this.pendingDeletes = this.pendingDeletes.filter(r => r !== record);
+      }, 5000);
+    
+      this.pendingDeletes.push(record);
+    
+      this.showUndoToast("Task deleted", () => {
+        clearTimeout(record.timerId);
+        this.pendingDeletes = this.pendingDeletes.filter(r => r !== record);
+        this.taskList = [...this.taskList, task];   // restore
+        this.toast = null;
+      });
     },
     
     async saveTasks() {
@@ -299,7 +317,29 @@ const app = createApp({
     },
 
     async deleteMessage(message) {
-      await this.$graffiti.delete(message, this.$graffitiSession.value);
+      this.hiddenMessageIds.add(message.url);
+      /* 2 ▪ create a record that keeps its own timerId */
+      const record = {
+        item: message,
+        timerId: null
+      };
+    
+      record.timerId = setTimeout(() => {
+        // irreversible delete after 5 s
+        this.$graffiti.delete(message, this.$graffitiSession.value);
+        this.pendingDeletes = this.pendingDeletes.filter(r => r !== record);
+        this.hiddenMessageIds.delete(message.url);
+      }, 5000);
+    
+      this.pendingDeletes.push(record);
+    
+      /* 3 ▪ toast with a rock-solid Undo */
+      this.showUndoToast("Message deleted", () => {
+        clearTimeout(record.timerId);
+        this.pendingDeletes = this.pendingDeletes.filter(r => r !== record);
+        this.hiddenMessageIds.delete(message.url);
+        this.toast = null;
+      });
     },
 
     async renameGroup() {
@@ -503,7 +543,16 @@ const app = createApp({
         a.value.published > b.value.published ? a : b
       );
       return latest.value.picture || './individualavatar.png';
-    }
+    }, 
+
+    showUndoToast(text, undoFn) {
+      // clear any existing toast
+      if (this.toast?.hideId) clearTimeout(this.toast.hideId);
+
+      const hideId = setTimeout(() => (this.toast = null), 5000);
+
+      this.toast = { text, undo: undoFn, hideId };
+    },
     
   },
 
@@ -622,9 +671,9 @@ const app = createApp({
       }
     },
     sortedMessages() {
-      return [...(this.rawMessages|| [])].sort((a, b) => {
-        return (a.value.published ?? 0) - (b.value.published ?? 0);
-      });
+        return [...(this.rawMessages || [])]
+          .filter(m => !this.hiddenMessageIds.has(m.url))      
+          .sort((a, b) => (a.value.published ?? 0) - (b.value.published ?? 0));
     }, 
 
     groupDescription: {
