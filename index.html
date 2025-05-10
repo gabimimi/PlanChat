@@ -28,7 +28,7 @@
                 <avatar-icon
                     v-if="profileForm.picture"
                     :src="profileForm.picture"
-                    alt="Mi perfil"
+                    alt="My profile"
                     :size="40"
                 ></avatar-icon>
 
@@ -39,8 +39,12 @@
                 ></avatar-icon>
             </div>
 
-            <template v-if="showProfile && currentActor">
-                <div class="profile-backdrop" @click="showProfile = false">
+            <transition name="zoom-profile">
+                <div
+                  class="profile-backdrop"
+                  v-if="showProfile && currentActor"
+                  @click="showProfile = false"
+                >
                   <div class="profile-modal" @click.stop>
                     <h3>My Profile</h3>
               
@@ -56,7 +60,7 @@
                     <label>Profile Picture</label>
                     <input type="file" accept="image/*" @change="onFileChange" />
                     <div v-if="profileForm.picture" class="img-preview">
-                      <img :src="profileForm.picture" alt="Preview de perfil" class="preview"/>
+                      <img :src="profileForm.picture" alt="Profile preview" class="preview"/>
                     </div>
               
                     <button class="logic" @click="saveProfile">Save Profile</button>
@@ -68,7 +72,7 @@
                     </button>
                   </div>
                 </div>
-              </template>
+            </transition>
           
   
 
@@ -118,7 +122,8 @@
                         properties: {
                         type: { const: 'Group Chat' },
                         name: { type: 'string' },
-                        channel: { type: 'string' }
+                        channel: { type: 'string' },
+                        description: { type: 'string' }
                         }
                     }
                     }
@@ -264,32 +269,34 @@
                     <textarea id="notes" v-model="taskNotes" placeholder="Add notes if desired"></textarea>
 
                     <h3>Tasks</h3>
-                    <div
-                        v-for="(task, index) in taskList"
-                        :key="index"
-                        class="task-row"
-                        style="display: flex; align-items: center; gap: 0.5em;"
-                    >
-                        <input type="checkbox" v-model="task.done" class="cute-checkbox"/>
-                        <input
-                        v-model="task.text"
-                        placeholder="Task description"
-                        style="flex: 1;"
-                        type="text"
-                        />
-                        <select v-model="task.assignedTo">
-                        <option disabled value="">Select</option>
-                        <option
-                            v-for="member in groupMembers"
-                            :key="member"
-                            :value="member"
+                    <transition-group name="slide-fade" tag="div" class="tasks-wrapper">
+                         
+                        <div
+                            v-for="(task, index) in taskList"
+                            :key="index"
+                            class="task-row"
+                            style="display: flex; align-items: center; gap: 0.5em;"
                         >
-                            {{ shortName(member) }}
-                        </option>
-                        </select>
-                        <button @click="removeTask(index)" class="removeTask">❌</button>
-                    </div>
-
+                            <input type="checkbox" v-model="task.done" class="cute-checkbox"/>
+                            <input
+                            v-model="task.text"
+                            placeholder="Task description"
+                            style="flex: 1;"
+                            type="text"
+                            />
+                            <select v-model="task.assignedTo">
+                            <option disabled value="">Select</option>
+                            <option
+                                v-for="member in groupMembers"
+                                :key="member"
+                                :value="member"
+                            >
+                                {{ shortName(member) }}
+                            </option>
+                            </select>
+                            <button @click="removeTask(index)" class="removeTask">❌</button>
+                        </div>
+                    </transition-group>
                     <button class="logic" @click="addTask">+ Add Task</button>
                     <button class="logic" @click="saveTasks(); showTaskAssignment = false">Save</button>
 

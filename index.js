@@ -205,6 +205,7 @@ const app = createApp({
               object: {
                 type: "Group Chat",
                 name: this.groupName,
+                description: this.groupDescription || "",
                 channel: newChannel,
               },
             },
@@ -240,6 +241,24 @@ const app = createApp({
         groupMenu.classList.add('hidden');
         createGroupForm.classList.toggle('hidden');
         createGroupForm.classList.toggle('showing');
+    },
+
+    async saveDescription () {
+      if (!this.selectedGroup) return;
+    
+      await this.$graffiti.patch(
+        {
+          value: [
+            {
+              op:   "replace",          // or "add" if it was missing
+              path: "/object/description",
+              value: this.groupDescription
+            }
+          ]
+        },
+        this.selectedGroup,            // ← the Create-object you discovered
+        this.$graffitiSession.value
+      );
     },
 
     startEdit(message) {
@@ -333,7 +352,7 @@ const app = createApp({
         { value: profileObj, generator: "https://username.github.io/your-app/", channels: [ this.currentActor, "designftw-2025-studio2" ] },
         this.$graffitiSession.value
       );
-      alert("¡Perfil guardado!");
+      alert("¡Profile Saved!");
       this.showProfile = false;
     },
 
@@ -597,6 +616,15 @@ const app = createApp({
       return [...(this.rawMessages|| [])].sort((a, b) => {
         return (a.value.published ?? 0) - (b.value.published ?? 0);
       });
+    },
+
+    get() {
+      return this.selectedGroup?.value.object.description || "";
+    },
+    set(val) {
+      if (!this.selectedGroup) return;
+      // keep it reactive locally
+      this.selectedGroup.value.object.description = val;
     }
   },
 
