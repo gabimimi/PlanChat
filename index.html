@@ -122,8 +122,7 @@
                         properties: {
                         type: { const: 'Group Chat' },
                         name: { type: 'string' },
-                        channel: { type: 'string' },
-                        description: { type: 'string' }
+                        channel: { type: 'string' }
                         }
                     }
                     }
@@ -213,10 +212,10 @@
                                 v-slot="{ objects }"
                             >
                             <avatar-icon
-                                :src="memberAvatar(objects)"
-                                :alt="`Avatar de ${member}`"
-                                :size="32"
-                              />
+                            :src="memberAvatar(objects)"
+                            :alt="'Avatar de ' + member"
+                            :size="32"
+                            />
                             </graffiti-discover>
 
                             <!-- 3) Luego el nombre -->
@@ -498,7 +497,25 @@
                 {{ updateTaskState(objects) }}
             </div>
         </graffiti-discover>
-        
+        <graffiti-discover
+            :key="selectedChannel"
+            :channels="[selectedChannel]"
+            :schema="{
+                properties:{
+                value:{
+                    required:['activity','text','published'],
+                    properties:{
+                    activity:{const:'Description'},
+                    text:{type:'string'},
+                    published:{type:'number'}
+                    }
+                }
+                }
+            }"
+            v-slot="{ objects }"
+            >
+            <div style="display:none">{{ updateDescriptionState(objects) }}</div>
+        </graffiti-discover>
 
     </div>
 

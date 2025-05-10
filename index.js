@@ -36,7 +36,7 @@ const app = createApp({
       groupNameObjects: [],
       activeMenu: null,
       showGroupInfo: false,
-      showGroupInfo: false,
+      groupDescriptionsByGroup: {},
       groupMembers: [],
       isLoggedIn: false,
       showProfile: false,
@@ -205,7 +205,6 @@ const app = createApp({
               object: {
                 type: "Group Chat",
                 name: this.groupName,
-                description: this.groupDescription || "",
                 channel: newChannel,
               },
             },
@@ -243,30 +242,32 @@ const app = createApp({
         createGroupForm.classList.toggle('showing');
     },
 
-    async saveDescription () {
+    async saveDescription() {
       if (!this.selectedChannel) return;
     
-      // Find the newest Create-object for this channel
-      const latest = this.groupChatObjects
-        .filter(o => o.value.object.channel === this.selectedChannel)
-        .reduce((a, b) =>
-          (a.value.published ?? a.timestamp ?? 0) >
-          (b.value.published ?? b.timestamp ?? 0) ? a : b
-        );
-    
-      await this.$graffiti.patch(
-        {
-          value: [{
-            op:   latest.value.object.description ? "replace" : "add",
-            path: "/object/description",
-            value: this.groupDescription
-          }]
-        },
-        latest,
-        this.$graffitiSession.value
-      );
+      await this.$graffiti.put({
+        channels: [this.selectedChannel],
+        value: {
+          activity:  "Description",
+          text:      this.groupDescription,
+          published: Date.now()
+        }
+      }, this.$graffitiSession.value);
     
       alert("Description saved!");
+    },
+
+    updateDescriptionState(objects) {
+      if (!Array.isArray(objects) || !this.selectedChannel) return;
+  
+      const mine = objects.filter(o => o.value.activity === "Description");
+      if (!mine.length) return;
+  
+      const latest = mine.reduce((a, b) =>
+        (a.value.published ?? 0) > (b.value.published ?? 0) ? a : b
+      );
+  
+      this.groupDescriptionsByGroup[this.selectedChannel] = latest.value.text || "";
     },
 
     startEdit(message) {
@@ -569,15 +570,8 @@ const app = createApp({
           this.updateMembers(Array.isArray(objs) ? objs : []);
         },
         immediate: true
-      },
+      }
 
-    groupChatObjects (list) {
-      if (!this.selectedChannel) return;
-      const fresh = list.find(
-        o => o.value.object.channel === this.selectedChannel
-      );
-      if (fresh) this.selectedGroup = fresh;
-    }
 
   },
 
@@ -631,16 +625,17 @@ const app = createApp({
       return [...(this.rawMessages|| [])].sort((a, b) => {
         return (a.value.published ?? 0) - (b.value.published ?? 0);
       });
-    },
+    }, 
 
     groupDescription: {
-      get () {
-        return this.selectedGroup?.value.object.description || "";
+      get() {
+        return this.groupDescriptionsByGroup[this.selectedChannel] || "";
       },
-      set (val) {
-        if (this.selectedGroup) {
-          this.selectedGroup.value.object.description = val;
-        }
+      set(val) {
+        this.groupDescriptionsByGroup = {
+          ...this.groupDescriptionsByGroup,
+          [this.selectedChannel]: val
+        };
       }
     }
   },
