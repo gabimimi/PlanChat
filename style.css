@@ -1037,6 +1037,16 @@ input[type = "text"] {
 .fade-enter-from,
 .fade-leave-to     { opacity: 0 }
 
+.last-message {
+  display:block;
+  font-size: 0.8rem;
+  color:#888;
+  margin-top:2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

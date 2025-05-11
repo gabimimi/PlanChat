@@ -63,7 +63,8 @@ const app = createApp({
       loaderId: null,
       groupsLoaded: false, 
       profileLoaded: false,
-      messagesLoaded: false
+      messagesLoaded: false, 
+      lastLinesByChannel: Object.create(null)
     };
   },
 
@@ -569,7 +570,55 @@ const app = createApp({
 
       this.toast = { text, undo: undoFn, hideId };
     },
+
     
+    lastLine(objects) {
+      if (!Array.isArray(objects) || objects.length === 0) return "";
+      const newest = objects.reduce((a, b) =>
+        (a.value.published ?? 0) > (b.value.published ?? 0) ? a : b
+      );
+      const author  = this.shortName(newest.actor);
+      const content = newest.value.content?.trim() ?? "";
+      // keep it short – 40 chars max
+      const snippet = content.length > 40 ? content.slice(0, 37) + "…" : content;
+      return `${author}: ${snippet}`;
+    },
+
+    async refreshLastLine(channel) {
+      const store = this.$graffitiSession.value?.store;
+      if (!store) return;
+
+      // ask for just messages that have content + published
+      const res = await store.query({
+        channels: [channel],
+        filters: [{ field: 'value.content', exists: true }],
+      });
+
+      if (!res.objects.length) {
+        this.$set(this.lastLinesByChannel, channel, '');
+        return;
+      }
+
+      // newest = greatest published (or timestamp fallback)
+      const newest = res.objects.reduce((a, b) =>
+        (a.value.published ?? a.timestamp ?? 0) >
+        (b.value.published ?? b.timestamp ?? 0) ? a : b
+      );
+
+      const author  = this.shortName(newest.actor);
+      const content = (newest.value.content || '').trim();
+      const snippet = content.length > 40 ? content.slice(0, 37) + '…' : content;
+
+      this.$set(this.lastLinesByChannel, channel, `${author}: ${snippet}`);
+    },
+    
+    handlePollingDone(initialPolling) {
+      if (initialPolling) return;                    // still polling
+      if (this.messagesLoaded) return;       // already hid
+
+      this.messagesLoaded = true;            // mark complete
+      this.hideLoader();                     // hide overlay
+    },
   },
 
   watch: {
@@ -578,31 +627,35 @@ const app = createApp({
     },
     selectedChannel(newChan, oldChan) {
       if (newChan && newChan !== oldChan) {
-        /* 1️⃣  show overlay immediately */
         this.showLoader();
         this.messagesLoaded = false;
-  
-        /* 2️⃣  clear previous list so length starts at 0 */
         this.rawMessages = [];
-  
-        /* 3️⃣  wait until first batch of messages arrives */
-        const stop = this.$watch(
+
+        const stopLen = this.$watch(
           () => this.rawMessages.length,
           len => {
             if (len > 0) {
               this.messagesLoaded = true;
-              this.hideLoader();   // overlay disappears
-              stop();              // stop watching
+              this.hideLoader();
+              stopLen();
+              clearTimeout(failSafe);
             }
           },
-          { immediate: false }
+          { immediate:false }
         );
+
+        // NEW: fail-safe – hide after 4 s if still empty
+        const failSafe = setTimeout(() => {
+          if (!this.messagesLoaded) {
+            this.hideLoader();
+            stopLen();
+          }
+        }, 4000);
       }
-      /* Existing task-loading logic stays: */
-      if (newChan) {
-        this.loadTasks();
-      }
+
+      if (newChan) this.loadTasks();
     },
+
     $graffitiSession: {
       handler(session) {
         const actor = session?.value?.actor;
@@ -703,9 +756,32 @@ const app = createApp({
           this.hideLoader();
         }
       }
-    }
+    }, 
 
+    groupNameObjects: {
+      immediate: true,
+      handler(objs) {
+        // extract all channel IDs from “Create” events
+        const channels = (objs || [])
+        .map(o =>
+          o.value?.object?.channel        // from “Create” events
+          ?? o.value?.describes           // from name-binding events
+        )
+        .filter(Boolean); 
+        channels.forEach(ch => {
+          if (!(ch in this.lastLinesByChannel)) {
+            this.refreshLastLine(ch);          // fetch once
+          }
+        });
+      }
+    },
 
+    // refresh the preview when *any* new message arrives
+    rawMessages(newMsgs) {
+      if (this.selectedChannel) {
+        this.refreshLastLine(this.selectedChannel);
+      }
+    },
   },
 
   computed: {
