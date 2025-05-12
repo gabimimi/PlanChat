@@ -110,6 +110,7 @@
             <!-- Group Chat List -->
             <graffiti-discover
             v-slot="{ objects }"
+            autopoll
             :channels="['channelsPlanChat']"
             :schema="{
                 properties: {
@@ -135,6 +136,7 @@
                 <ul class="group-chat-list">
                     <li
                         v-for="group in groupChatObjects"
+                        autopoll
                         :key="group.url"
                         class="group-chat-item"
                     >
@@ -332,6 +334,7 @@
                          
                         <div
                             v-for="(task, index) in taskList"
+                            autopoll
                             :key="index"
                             class="task-row"
                             style="display: flex; align-items: center; gap: 0.5em;"
