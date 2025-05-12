@@ -125,7 +125,7 @@
     width: 100%;
   }
   
-  .chat-area button:not(.option, .plus-button, .pinButton, .cancel, .removeTask) {
+  .chat-area button:not(.option, .plus-button, .pinButton, .cancel, .removeTask, .task-shortcut) {
     font-size: 14px;
     padding: 8px 15px;
     margin-left: 10px;
@@ -151,7 +151,7 @@
   }
   
   .chat-area input[type="submit"]:hover,
-  .chat-area button:hover:not(.plus-button, .cancel, .removeTask) {
+  .chat-area button:hover:not(.plus-button, .cancel, .removeTask, .task-shortcut) {
     background-color: rgb(109, 124, 180);
   }
 
@@ -1045,6 +1045,34 @@ input[type = "text"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.titleGroup {
+  position: relative;
+  /* existing layout rules… */
+}
+
+.task-shortcut {
+  position: absolute;
+  top: 5rem;                 /* distance from top of chat‐area */
+  left: 0rem; 
+  background: #6d7fcabf;  /* dark translucent bg */
+  color: #fff;                      /* white icon/text */
+  border: 2px solid #fff;          /* white outline */
+  border-radius: 50%;               /* circular pill */
+  padding: 0.3em;                   /* some breathing room */
+  font-size: 2em;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+  transform-origin: center;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.task-shortcut:hover {
+  transform: scale(1.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  opacity: 0.95;
 }
 
 @keyframes fadeInUp {

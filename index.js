@@ -818,6 +818,10 @@ const app = createApp({
   },
 
   computed: {
+    hasTasks() {
+      return this.taskList.length > 0;
+    }, 
+
     currentActor() {
       return this.$graffitiSession.value?.actor ?? null;
     },
@@ -894,7 +898,7 @@ const app = createApp({
 
     // 1️⃣  Hoisted helper (function declaration is hoisted)
     const maybeHideGlobal = () => {
-      if (this.groupsLoaded && this.profileLoaded) {
+      if (this.groupsLoaded) {
         console.log('both done');
         this.hideLoader();}
     };
@@ -919,7 +923,7 @@ const app = createApp({
         if (loaded) {
           console.log('profile loaded');
           this.profileLoaded = true;
-          maybeHideGlobal();
+
         }
       },
       { immediate: true }

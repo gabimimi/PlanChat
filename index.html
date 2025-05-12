@@ -346,7 +346,7 @@
                             <select v-model="task.assignedTo">
                             <option disabled value="">Select</option>
                             <option
-                                v-for="member in groupMembers"
+                                v-for="member in (groupMembersByChannel[selectedChannel] || [])"
                                 :key="member"
                                 :value="member"
                             >
@@ -367,6 +367,12 @@
                             <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
                             <h2>{{ getGroupName(selectedChannel) || selectedGroup?.value.object.name }}</h2>
                             <span class="info-icon">ℹ️</span>
+                            <button
+                                v-if="hasTasks"
+                                class="task-shortcut"
+                                @click.stop="showTaskAssignment = true; showGroupInfo = true"
+                                title="Task Assignment"
+                            >🗒️</button>
                         </div>
                     </div>
 
