@@ -64,7 +64,9 @@ const app = createApp({
       groupsLoaded: false, 
       profileLoaded: false,
       messagesLoaded: false, 
-      lastLinesByChannel: Object.create(null)
+      lastLinesByChannel: Object.create(null),
+      groupMembersByChannel: {},
+      groupChatObjects: [],
     };
   },
 
@@ -262,8 +264,8 @@ const app = createApp({
         this.selectedChannel = newChannel;
         this.groupName = "";
         groupMenu.classList.add('hidden');
-        createGroupForm.classList.toggle('hidden');
-        createGroupForm.classList.toggle('showing');
+        this.showCreateForm    = false;   // hide the form
+        this.showGroupDropdown = false;
     },
 
     async saveDescription() {
@@ -533,23 +535,33 @@ const app = createApp({
     },
   
     
-    updateMembers(objs) {
-      // objs viene del discover: array de todos los events "Members"
-      if (!Array.isArray(objs)) {
-        this.groupMembers = [];
-        return;
-      }
-      // Solo los events “Members”
-      const mine = objs.filter(o => o.value.activity === 'Members');
-      if (!mine.length) {
-        this.groupMembers = [];
-        return;
-      }
-      // Elegimos el más reciente
-      const latest = mine.reduce((a, b) =>
-        a.value.published > b.value.published ? a : b
+    updateMembers(objects, channel) {
+    // 1️⃣ filter out only “Members” events
+      const membersEvents = Array.isArray(objects)
+        ? objects.filter(o => o.value.activity === 'Members')
+        : [];
+
+      if (!membersEvents.length) return;
+
+      // 2️⃣ pick the latest
+      const latest = membersEvents.reduce((a, b) =>
+        (a.value.published > b.value.published ? a : b)
       );
-      this.groupMembers = [ ...latest.value.members ];
+      const newList = Array.isArray(latest.value.members)
+        ? latest.value.members
+        : [];
+
+      // 3️⃣ compare to what we have
+      const oldList = this.groupMembersByChannel[channel] || [];
+      const same = oldList.length === newList.length
+        && oldList.every((v,i) => v === newList[i]);
+      if (same) return;    // no change → no rewrite
+
+      // 4️⃣ write only on real change (breaks any recursion)
+      this.groupMembersByChannel = {
+        ...this.groupMembersByChannel,
+        [channel]: newList
+      };
     },
 
     memberAvatar(objects) {
@@ -619,6 +631,15 @@ const app = createApp({
       this.messagesLoaded = true;            // mark complete
       this.hideLoader();                     // hide overlay
     },
+
+    isMember(channel) {
+      const list = this.groupMembersByChannel[channel] || [];
+      return list.includes(this.currentActor);
+    },
+
+    // fetch **once** per channel, keep only the newest “Members” object
+    
+
   },
 
   watch: {
@@ -659,14 +680,27 @@ const app = createApp({
     $graffitiSession: {
       handler(session) {
         const actor = session?.value?.actor;
-        if (!actor) return;
-  
-        console.log("Logged in as", actor);
-  
+        const store = session?.value?.store;
+        if (!actor || !store) return;
+
+        console.log("✅ Session available with store");
+
+        // fetch members for all known channels
+        const channels = this.groupNameObjects
+          .map(o => o.value?.object?.channel ?? o.value?.describes)
+          .filter(Boolean);
+
+        channels.forEach(ch => {
+          if (!(ch in this.lastLinesByChannel)) {
+            this.refreshLastLine(ch);
+          }
+        });
+
+        // already existing logic
         const alreadyLogged = this.usersObjects.some(
           (obj) => obj.value?.actor === actor
         );
-  
+
         if (!alreadyLogged) {
           this.$graffiti.put({
             value: {
@@ -676,10 +710,10 @@ const app = createApp({
             },
             channels: ["users"]
           }, session.value).then(() => {
-            console.log("Login recorded for:", actor);
+            console.log("📝 Login recorded for:", actor);
           });
         }
-  
+
         this.loadProfile();
       },
       immediate: true
@@ -761,26 +795,25 @@ const app = createApp({
     groupNameObjects: {
       immediate: true,
       handler(objs) {
-        // extract all channel IDs from “Create” events
-        const channels = (objs || [])
-        .map(o =>
-          o.value?.object?.channel        // from “Create” events
-          ?? o.value?.describes           // from name-binding events
-        )
-        .filter(Boolean); 
-        channels.forEach(ch => {
-          if (!(ch in this.lastLinesByChannel)) {
-            this.refreshLastLine(ch);          // fetch once
-          }
-        });
+        this.groupNameObjects = objs;
       }
     },
+
 
     // refresh the preview when *any* new message arrives
     rawMessages(newMsgs) {
       if (this.selectedChannel) {
         this.refreshLastLine(this.selectedChannel);
       }
+    },
+
+    $graffitiSession: {
+      handler(s) {
+        if (!s?.store) return;
+        // fetch memberships for every known channel once the store is ready
+
+      },
+      immediate: true
     },
   },
 
@@ -846,7 +879,15 @@ const app = createApp({
           [this.selectedChannel]: val
         };
       }
-    }
+    }, 
+
+    filteredGroupChatObjects() {
+      console.log(this.groupMembersByChannel);
+      return this.groupChatObjects.filter(g => {
+        const members = this.groupMembersByChannel[g.value.object.channel] || [];
+        return members.includes(this.currentActor);
+      });
+    },
   },
 
   mounted() {
@@ -890,7 +931,13 @@ const app = createApp({
     const unwatch = this.$watch(
       () => this.$refs.groupNameDiscover?.$data?.objects,
       (newObjects) => {
-        if (newObjects) this.groupNameObjects = newObjects;
+        if (newObjects) {
+          this.groupNameObjects = newObjects;
+          newObjects.forEach(obj => {
+            const ch = obj.value?.object?.channel ?? obj.value?.describes;
+
+          });
+        }
       },
       { immediate: true }
       
@@ -1016,3 +1063,5 @@ app
     graffiti: new GraffitiRemote(),
   })
   .mount("#app");
+
+

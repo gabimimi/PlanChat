@@ -109,7 +109,7 @@
 
             <!-- Group Chat List -->
             <graffiti-discover
-            v-slot="{ objects: groupChatObjects }"
+            v-slot="{ objects }"
             :channels="['channelsPlanChat']"
             :schema="{
                 properties: {
@@ -130,51 +130,77 @@
                 }
             }"
             >
+            <div style="display:none">{{ groupChatObjects = objects }}</div>
             <div class="chats">
                 <ul class="group-chat-list">
                     <li
-                    v-for="group in groupChatObjects"
-                    :key="group.url"
-                    class="group-chat-item"
-                    @click="
-                        selectedChannel    = group.value.object.channel;
-                        selectedGroup      = group;
-                        showGroupInfo      = false;
-                        showTaskAssignment = false;
-                    "
+                        v-for="group in groupChatObjects"
+                        :key="group.url"
+                        class="group-chat-item"
                     >
-                    <button class="groupchatbutton">
-                        <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
-                        <div class="text-content">
-                        <strong>
-                            {{ getGroupName(group.value.object.channel) || group.value.object.name }}
-                        </strong>
-
-                        <!-- newest message preview – NO extra props -->
+                        <!-- 1) Always run this discover so updateMembers(...) fires -->
                         <graffiti-discover
-                            :channels="[group.value.object.channel]"
-                            :schema="{
-                            properties: {
-                                value: {
-                                required: ['content','published'],
-                                properties: {
-                                    content:   { type:'string' },
-                                    published: { type:'number' }
-                                }
+                        :channels="[group.value?.object?.channel]"
+                        :schema="{
+                            properties:{
+                            value:{
+                                required:['activity','members'],
+                                properties:{
+                                activity:{const:'Members'},
+                                members:{type:'array',items:{type:'string'}}
                                 }
                             }
-                            }"
-                            v-slot="{ objects }"
-                            autopoll              
+                            }
+                        }"
+                        v-slot="{ objects }"
+                        autopoll
                         >
-                            <small class="last-message">{{ lastLine(objects) }}</small>
-                        </graffiti-discover>
+                        <!-- stash into the right channel key -->
+                        <div style="display:none">
+                            {{ updateMembers(objects, group.value.object.channel) }}
                         </div>
-                    </button>
+                        </graffiti-discover>
+
+                        <!-- 2) Only show the button if the channel key exists and you're in it -->
+                        <template v-if="(groupMembersByChannel[group.value.object.channel] || []).includes(currentActor)">
+                        <button
+                            class="groupchatbutton"
+                            @click="
+                            selectedChannel    = group.value.object.channel;
+                            selectedGroup      = group;
+                            showGroupInfo      = false;
+                            showTaskAssignment = false;
+                            "
+                        >
+                            <img src="./groupavatar.png" alt="Group Pic" class="avatar" />
+                            <div class="text-content">
+                            <strong>
+                                {{ getGroupName(group.value.object.channel) || group.value.object.name }}
+                            </strong>
+                            <graffiti-discover
+                                :channels="[group.value.object.channel]"
+                                :schema="{
+                                properties:{
+                                    value:{
+                                    required:['content','published'],
+                                    properties:{
+                                        content:   { type:'string' },
+                                        published: { type:'number' }
+                                    }
+                                    }
+                                }
+                                }"
+                                v-slot="{ objects }"
+                                autopoll
+                            >
+                                <small class="last-message">{{ lastLine(objects) }}</small>
+                            </graffiti-discover>
+                            </div>
+                        </button>
+                        </template>
                     </li>
+                    </ul>
 
-
-                </ul>
             </div>
             </graffiti-discover>
         </div>
@@ -223,7 +249,7 @@
                         <div class="membersContainer">
                         <ul>
                             <li
-                            v-for="member in groupMembers"
+                            v-for="member in (groupMembersByChannel[selectedChannel] || [])"
                             :key="member"
                             class="member-item"
                             >
