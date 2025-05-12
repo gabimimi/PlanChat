@@ -277,15 +277,17 @@
                                 }"
                                 v-slot="{ objects }"
                                 >
+                                <div >
+                                    <span class="member-name">
+                                        {{ objects.length ? objects[objects.length -1].value.name : shortName(member) }}
+                                    </span>
 
-                                <span class="member-name">
-                                    {{ objects.length ? objects[objects.length -1].value.name : shortName(member) }}
-                                </span>
-
-                                <div class="member-card" v-if="objects.length">
-                                    <p>Pronouns: {{ objects[objects.length -1].value.pronouns }}</p>
-                                    <p>Bio: {{ objects[objects.length -1].value.bio }}</p>
+                                    <div class="when-hovered" v-if="objects.length">
+                                        <p>Pronouns: {{ objects[objects.length -1].value.pronouns }}</p>
+                                        <p>Bio: {{ objects[objects.length -1].value.bio }}</p>
+                                    </div>
                                 </div>
+                                
 
                                 <avatar-icon
                                     :src="memberAvatar(objects)"

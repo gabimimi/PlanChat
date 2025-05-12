@@ -936,13 +936,15 @@ const app = createApp({
     },
 
     sortedGroupChatObjects() {
-      return this.groupChatObjects
+      const returned = this.groupChatObjects
         .slice()
         .sort((a, b) => {
           const t1 = this.lastActivityByChannel[a.value.object.channel] || 0;
           const t2 = this.lastActivityByChannel[b.value.object.channel] || 0;
           return t2 - t1;  // newest first
         });
+      this.groupsLoaded = true;
+      return returned
     },
 
     hasPendingTasks() {
@@ -954,7 +956,7 @@ const app = createApp({
 
     // 1️⃣  Hoisted helper (function declaration is hoisted)
     const maybeHideGlobal = () => {
-      if (this.groupsLoaded) {
+      if (this.groupsLoaded && this.profileLoaded) {
         console.log('both done');
         this.hideLoader();}
     };
@@ -965,7 +967,6 @@ const app = createApp({
       len => {
         if (len) {
           console.log('groups loaded');
-          this.groupsLoaded = true;
           maybeHideGlobal();
         }
       },
@@ -979,7 +980,7 @@ const app = createApp({
         if (loaded) {
           console.log('profile loaded');
           this.profileLoaded = true;
-
+          maybeHideGlobal();
         }
       },
       { immediate: true }

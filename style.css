@@ -587,6 +587,8 @@
 
 .member-item {
   display: flex;
+  flex-direction: row-reverse;
+  justify-content: start;
   align-items: center;
   margin-bottom: 0.5em; /* espacio entre miembros */
 }
@@ -1089,9 +1091,17 @@ input[type = "text"] {
   pointer-events: none;
 }
 
+p {
+  font-weight: lighter;
+}
 
+.member-item .when-hovered {
+  display: none;
+}
 
-
+.member-item:hover .when-hovered {
+  display: block;
+}
 
 
 @keyframes fadeInUp {
