@@ -575,6 +575,16 @@ const app = createApp({
       return latest.value.picture || './individualavatar.png';
     }, 
 
+    memberDescription(objects) {
+      if (!objects.length) {
+        return '';
+      }
+      const latest = objects.reduce((a, b) =>
+        a.value.published > b.value.published ? a : b
+      );
+      return latest.value.bio || './individualavatar.png';
+    }, 
+
     showUndoToast(text, undoFn) {
       // clear any existing toast
       if (this.toast?.hideId) clearTimeout(this.toast.hideId);

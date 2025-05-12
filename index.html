@@ -262,28 +262,40 @@
                             <graffiti-discover
                                 :channels="[member]"
                                 :schema="{
-                                properties: {
-                                    value: {
-                                    required: ['describes','published'],
                                     properties: {
+                                    value: {
+                                        required: ['describes','published','name','pronouns','bio','picture'],
+                                        properties: {
                                         describes: { const: member },
                                         published: { type: 'number' },
-                                        picture:   { type: 'string' }
+                                        picture: { type: 'string' },
+                                        name: { type: 'string' },
+                                        pronouns: { type: 'string' },
+                                        bio: { type: 'string' }
+                                        }
                                     }
                                     }
-                                }
                                 }"
                                 v-slot="{ objects }"
-                            >
-                            <avatar-icon
-                            :src="memberAvatar(objects)"
-                            :alt="'Avatar de ' + member"
-                            :size="32"
-                            />
+                                >
+
+                                <span class="member-name">
+                                    {{ objects.length ? objects[0].value.name : shortName(member) }}
+                                </span>
+
+                                <div class="member-card" v-if="objects.length">
+                                    <p>Pronouns: {{ objects[0].value.pronouns }}</p>
+                                    <p>Bio: {{ objects[0].value.bio }}</p>
+                                </div>
+
+                                <avatar-icon
+                                    :src="memberAvatar(objects)"
+                                    :alt="'Avatar of ' + member"
+                                    :size="32"
+                                />
+                                
                             </graffiti-discover>
 
-                            <!-- 3) Luego el nombre -->
-                            <span class="member-name">{{ shortName(member) }}</span>
                             </li>
                         </ul>
 
@@ -614,4 +626,4 @@
 
     <script type="module" src="index.js"></script>
 </body>
-</html>
+</html
