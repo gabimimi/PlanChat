@@ -377,7 +377,8 @@
                                 class="task-shortcut"
                                 @click.stop="showTaskAssignment = true; showGroupInfo = true"
                                 title="Task Assignment"
-                            >🗒️</button>
+                            >🗒️
+                            <span v-if="hasPendingTasks" class="task-shortcut__badge"></span></button>
                         </div>
                     </div>
 

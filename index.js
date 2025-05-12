@@ -934,6 +934,10 @@ const app = createApp({
           return t2 - t1;  // newest first
         });
     },
+
+    hasPendingTasks() {
+      return this.taskList.some(t => !t.done);
+    },
   },
 
   mounted() {
