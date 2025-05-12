@@ -266,7 +266,6 @@
                                     value: {
                                         required: ['describes','published','name','pronouns','bio','picture'],
                                         properties: {
-                                        describes: { const: member },
                                         published: { type: 'number' },
                                         picture: { type: 'string' },
                                         name: { type: 'string' },
@@ -280,12 +279,12 @@
                                 >
 
                                 <span class="member-name">
-                                    {{ objects.length ? objects[0].value.name : shortName(member) }}
+                                    {{ objects.length ? objects[objects.length -1].value.name : shortName(member) }}
                                 </span>
 
                                 <div class="member-card" v-if="objects.length">
-                                    <p>Pronouns: {{ objects[0].value.pronouns }}</p>
-                                    <p>Bio: {{ objects[0].value.bio }}</p>
+                                    <p>Pronouns: {{ objects[objects.length -1].value.pronouns }}</p>
+                                    <p>Bio: {{ objects[objects.length -1].value.bio }}</p>
                                 </div>
 
                                 <avatar-icon
