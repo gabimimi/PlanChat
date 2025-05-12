@@ -67,6 +67,7 @@ const app = createApp({
       lastLinesByChannel: Object.create(null),
       groupMembersByChannel: {},
       groupChatObjects: [],
+      lastActivityByChannel: {},
     };
   },
 
@@ -510,7 +511,7 @@ const app = createApp({
       this.groupMembers.push(fullWebId);
       await this.saveGroupMembers();
 
-      alert(`Invitation sent to ${entered}`);
+      alert(`Added user ${entered}`);
       this.closeInvite();
     },
 
@@ -622,6 +623,13 @@ const app = createApp({
       const snippet = content.length > 40 ? content.slice(0, 37) + '…' : content;
 
       this.$set(this.lastLinesByChannel, channel, `${author}: ${snippet}`);
+
+      const ts = newest.value.published ?? newest.timestamp ?? 0;
+
+      this.lastActivityByChannel = {
+        ...this.lastActivityByChannel,
+        [channel]: ts
+      };
     },
     
     handlePollingDone(initialPolling) {
@@ -639,7 +647,21 @@ const app = createApp({
 
     // fetch **once** per channel, keep only the newest “Members” object
     
-
+    updateLastActivity(channel, objects) {
+      if (!Array.isArray(objects) || objects.length === 0) return;
+      // pick the newest by published
+      const newest = objects.reduce((a, b) =>
+        (a.value.published ?? 0) > (b.value.published ?? 0) ? a : b
+      );
+      const ts = newest.value.published ?? 0;
+      // only rewrite if changed
+      if (this.lastActivityByChannel[channel] !== ts) {
+        this.lastActivityByChannel = {
+          ...this.lastActivityByChannel,
+          [channel]: ts
+        };
+      }
+    },
   },
 
   watch: {
@@ -815,6 +837,16 @@ const app = createApp({
       },
       immediate: true
     },
+
+    groupChatObjects: {
+      handler(objs) {
+        objs.forEach(g => {
+          const ch = g.value.object.channel;
+          this.refreshLastLine(ch);
+        });
+      },
+      immediate: true
+    }
   },
 
   computed: {
@@ -891,6 +923,16 @@ const app = createApp({
         const members = this.groupMembersByChannel[g.value.object.channel] || [];
         return members.includes(this.currentActor);
       });
+    },
+
+    sortedGroupChatObjects() {
+      return this.groupChatObjects
+        .slice()
+        .sort((a, b) => {
+          const t1 = this.lastActivityByChannel[a.value.object.channel] || 0;
+          const t2 = this.lastActivityByChannel[b.value.object.channel] || 0;
+          return t2 - t1;  // newest first
+        });
     },
   },
 

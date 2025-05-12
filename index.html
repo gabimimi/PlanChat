@@ -135,7 +135,7 @@
             <div class="chats">
                 <ul class="group-chat-list">
                     <li
-                        v-for="group in groupChatObjects"
+                        v-for="group in sortedGroupChatObjects"
                         :key="group.url"
                         class="group-chat-item"
                     >
@@ -159,6 +159,7 @@
                         <!-- stash into the right channel key -->
                         <div style="display:none">
                             {{ updateMembers(objects, group.value.object.channel) }}
+                            
                         </div>
                         </graffiti-discover>
 
@@ -194,6 +195,9 @@
                                 v-slot="{ objects }"
                                 autopoll
                             >
+                                <div style="display:none">
+                                  {{ updateLastActivity(group.value.object.channel, objects) }}
+                                </div>
                                 <small class="last-message">{{ lastLine(objects) }}</small>
                             </graffiti-discover>
                             </div>
@@ -294,7 +298,7 @@
                     <template v-if="showInviteModal">
                         <div class="profile-backdrop" @click="closeInvite">
                           <div class="profile-modal" @click.stop>
-                            <h3>Invite member</h3>
+                            <h3>Add member</h3>
                 
                             <label>Username or URI</label>
                             <input
@@ -586,6 +590,7 @@
                 }
             }"
             v-slot="{ objects }"
+            autopoll
             >
             <div style="display:none">{{ updateDescriptionState(objects) }}</div>
         </graffiti-discover>
